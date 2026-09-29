@@ -4,6 +4,8 @@ import { Modal } from './Modal';
 interface Props {
   open: boolean;
   settings: Settings;
+  /** A rules change (draw/scoring) was made mid-game and will only apply to the next one. */
+  deferredNote: boolean;
   onChange(patch: Partial<Settings>): void;
   onClose(): void;
 }
@@ -35,7 +37,7 @@ function Toggle(p: { label: string; checked: boolean; onChange(v: boolean): void
   );
 }
 
-export function SettingsDialog({ open, settings: s, onChange, onClose }: Props) {
+export function SettingsDialog({ open, settings: s, deferredNote, onChange, onClose }: Props) {
   return (
     <Modal open={open} title="Settings" onClose={onClose} actions={<button type="button" className="primary" onClick={onClose}>Done</button>}>
       <Segmented label="Draw" value={s.drawCount} options={[[1, 'Draw 1'], [3, 'Draw 3']]} onChange={(drawCount) => onChange({ drawCount })} />
@@ -45,6 +47,9 @@ export function SettingsDialog({ open, settings: s, onChange, onClose }: Props) 
         options={[['standard', 'Standard'], ['vegas', 'Vegas'], ['none', 'None']]}
         onChange={(scoring) => onChange({ scoring })}
       />
+      {deferredNote && (
+        <p className="note" role="status">Applies to your next game.</p>
+      )}
       {s.scoring === 'vegas' && (
         <>
           <p className="note">Vegas limits passes through the stock (1 in Draw 1, 3 in Draw 3), so deals may not be winnable.</p>

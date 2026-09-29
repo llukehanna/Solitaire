@@ -37,6 +37,8 @@
   --ink-muted: #5d6573;
   --chrome-bg: rgba(255, 255, 255, 0.6);
   --table-bg: #eef1f5;
+  /* The felt theme's yellow has no contrast on light backgrounds; dark modes below restore it. */
+  --accent: #1d5fd1;
 }
 
 .theme-minimal.mode-dark {
@@ -57,6 +59,7 @@
   --panel-muted: #a3abb8;
   --panel-line: #394150;
   --table-bg: #171b22;
+  --accent: #ffd54f;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -78,6 +81,7 @@
     --panel-muted: #a3abb8;
     --panel-line: #394150;
     --table-bg: #171b22;
+    --accent: #ffd54f;
   }
 }
 

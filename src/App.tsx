@@ -21,6 +21,8 @@ export default function App() {
   const game = useGame();
   const { session, settings, stats, holdTimer } = game;
   const [dialog, setDialog] = useState<DialogName>(null);
+  // Set when a settings change only applies from the next game; shown inline because toasts render under modals.
+  const [deferredNote, setDeferredNote] = useState(false);
   const [toast, showToast] = useToast();
   const solver = useSolver(game, showToast);
   const [celebrate, setCelebrate] = useState(false);
@@ -136,14 +138,19 @@ export default function App() {
       <SettingsDialog
         open={dialog === 'settings'}
         settings={settings}
+        deferredNote={deferredNote}
         onChange={(patch) => {
-          if (game.updateSettings(patch)) showToast('Applies to your next game');
+          if (game.updateSettings(patch)) setDeferredNote(true);
         }}
-        onClose={() => setDialog(null)}
+        onClose={() => {
+          setDialog(null);
+          setDeferredNote(false);
+        }}
       />
       <StatsDialog open={dialog === 'stats'} stats={stats} onClose={() => setDialog(null)} />
       <NoMovesDialog
         kind={stuck}
+        scoring={session.scoring}
         canUndo={session.history.length > 0}
         busy={solver.busy === 'rewind'}
         onUndo={closeStuck(game.undo)}

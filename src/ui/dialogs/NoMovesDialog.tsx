@@ -1,8 +1,10 @@
+import type { Scoring } from '../../engine/types';
 import type { Stuck } from '../useSolver';
 import { Modal } from './Modal';
 
 interface Props {
   kind: Stuck;
+  scoring: Scoring;
   canUndo: boolean;
   busy: boolean;
   onUndo(): void;
@@ -35,7 +37,11 @@ export function NoMovesDialog(p: Props) {
     >
       <p>
         {lost
-          ? 'The solver checked every possibility: this position can’t be won. Every deal starts winnable, so you can rewind to the last position that could still be won.'
+          ? `The solver checked every possibility: this position can’t be won. ${
+              p.scoring === 'vegas'
+                ? 'You can rewind to the last position that could still be won.'
+                : 'Every deal starts winnable, so you can rewind to the last position that could still be won.'
+            }`
           : 'There are no useful moves left. Rewind to the last position that could still be won, or start over.'}
       </p>
     </Modal>
