@@ -1,6 +1,8 @@
-import { useRef, type ButtonHTMLAttributes } from 'react';
+import { useRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import type { DrawCount } from '../engine/types';
+import type { TableTheme } from '../store/settings';
 import { Icon, type IconName } from './Icon';
+import { TableSwitch } from './TableSwitch';
 
 interface ToolbarProps {
   canUndo: boolean;
@@ -16,6 +18,9 @@ interface ToolbarProps {
   onCheck?(): void;
   onSettings(): void;
   onStats(): void;
+  readout: ReactNode;
+  table: TableTheme;
+  onTable(t: TableTheme): void;
 }
 
 function TbButton({ icon, label, ...rest }: { icon: IconName; label: string } & ButtonHTMLAttributes<HTMLButtonElement>) {
@@ -35,6 +40,7 @@ export function Toolbar(p: ToolbarProps) {
   };
   return (
     <header className="toolbar">
+      <span className="wordmark">Solitaire</span>
       <details className="menu" ref={menu}>
         <summary className="tb-btn" aria-label="Game menu" title="Game menu">
           <Icon name="cards" />
@@ -53,6 +59,8 @@ export function Toolbar(p: ToolbarProps) {
       {p.onHint && <TbButton icon="bulb" label={p.busy === 'hint' ? 'Thinking…' : 'Hint'} disabled={!!p.busy} onClick={p.onHint} />}
       {p.onCheck && <TbButton icon="check" label="Winnable?" disabled={!!p.busy} onClick={p.onCheck} />}
       <span className="tb-spacer" />
+      {p.readout}
+      <TableSwitch value={p.table} onChange={p.onTable} />
       <TbButton icon="chart" label="Stats" onClick={p.onStats} />
       <TbButton icon="sliders" label="Settings" onClick={p.onSettings} />
     </header>

@@ -236,3 +236,14 @@ test('a mid-game rules change shows its "next game" note inside the settings dia
   await page.getByRole('button', { name: 'Settings' }).click();
   await expect(page.getByRole('dialog', { name: 'Settings' }).getByText('Applies to your next game.')).toHaveCount(0);
 });
+
+test('the table switch changes the look and persists across reload', async ({ page }) => {
+  await freshGame(page, { seed: SEED });
+  await expect(page.locator('.app')).toHaveClass(/table-studio/);
+  await page.getByRole('radio', { name: 'Paper table' }).click();
+  await expect(page.locator('.app')).toHaveClass(/table-paper/);
+  await page.reload();
+  await page.waitForFunction(() => !!window.__sol);
+  await expect(page.locator('.app')).toHaveClass(/table-paper/);
+  await expect(page.getByRole('radio', { name: 'Paper table' })).toHaveAttribute('aria-checked', 'true');
+});

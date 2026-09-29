@@ -4,11 +4,11 @@ import type { Settings } from '../store/settings';
 import { formatScore, formatTime } from './format';
 import { useNow } from './useNow';
 
-export function StatusBar({ session, settings, vegasBank }: { session: Session; settings: Settings; vegasBank: number }) {
+export function Readout({ session, settings, vegasBank }: { session: Session; settings: Settings; vegasBank: number }) {
   const now = useNow(session.timer.runningSince !== null ? 1000 : null);
   const score = formatScore(session, settings, vegasBank);
   return (
-    <footer className="status">
+    <div className="readout">
       {score !== null && (
         <span>
           Score <b>{score}</b>
@@ -21,9 +21,9 @@ export function StatusBar({ session, settings, vegasBank }: { session: Session; 
         Moves <b>{session.state.moves}</b>
       </span>
       <span>
-        Time <b data-testid="timer">{formatTime(elapsed(session.timer, now))}</b>
+        <b data-testid="timer" aria-label="Time">{formatTime(elapsed(session.timer, now))}</b>
       </span>
-      <span className="status-mode">Draw {session.drawCount}</span>
-    </footer>
+      <span className="pill">Draw {session.drawCount}</span>
+    </div>
   );
 }
