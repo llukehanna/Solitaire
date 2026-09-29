@@ -14,7 +14,10 @@ export function TableSwitch({ value, onChange }: { value: TableTheme; onChange(t
           aria-label={`${NAMES[t]} table`}
           title={NAMES[t]}
           className={`swatch swatch-${t}`}
-          onClick={() => onChange(t)}
+          onClick={(e) => {
+            onChange(t);
+            if (e.detail > 0) e.currentTarget.blur(); // pointer click (detail 0 = keyboard): let Space reach the table
+          }}
         />
       ))}
     </div>
