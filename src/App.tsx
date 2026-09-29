@@ -161,7 +161,7 @@ export default function App() {
           setDeferredNote(false);
         }}
       />
-      <StatsDialog open={dialog === 'stats'} stats={stats} onClose={() => setDialog(null)} />
+      <StatsDialog open={dialog === 'stats'} stats={stats} onImport={game.importStats} onClose={() => setDialog(null)} />
       <NoMovesDialog
         kind={stuck}
         scoring={session.scoring}

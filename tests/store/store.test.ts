@@ -2,7 +2,7 @@ import { beforeEach, describe, it, expect } from 'vitest';
 import { installLocalStorage, removeLocalStorage } from '../localStorage';
 import { KEYS, readJSON, writeJSON } from '../../src/store/storage';
 import { DEFAULT_SETTINGS, loadSettings, parseSettings, saveSettings } from '../../src/store/settings';
-import { emptyStats, parseStats, recordResult, winRate } from '../../src/store/stats';
+import { emptyStats, importStats, parseImportForm, parseStats, recordResult, SOLITAIRED_PREFILL, winRate } from '../../src/store/stats';
 import { RECENT_LIMIT, loadRecent, pushRecent } from '../../src/store/recent';
 
 beforeEach(() => {
@@ -75,6 +75,44 @@ describe('stats', () => {
   it('replaces corrupt data with empty stats', () => {
     expect(parseStats({ v: 1, draw1: { played: 'x' } })).toEqual(emptyStats());
     expect(parseStats(null)).toEqual(emptyStats());
+  });
+});
+
+describe('stats import', () => {
+  it('adds counts, keeps the better bests, marks draw1 and leaves streaks alone', () => {
+    let s = emptyStats();
+    s = recordResult(s, { drawCount: 1, scoring: 'standard', won: true, timeMs: 20_000, moves: 150, score: 500 });
+    const r = importStats(s, SOLITAIRED_PREFILL, 123);
+    expect(r.draw1).toMatchObject({
+      played: 5562,
+      won: 4090,
+      bestTimeMs: 20_000, // ours was better
+      fewestMoves: 102, // theirs was better
+      currentStreak: 1,
+      bestStreak: 1,
+      bestScore: 500,
+      imported: { source: 'solitaired', at: 123 },
+    });
+    expect(r.draw3).toEqual(s.draw3);
+    expect(importStats(r, SOLITAIRED_PREFILL, 456)).toBe(r); // once only
+  });
+  it('keeps the marker through later results and round-trips v2', () => {
+    const r = recordResult(importStats(emptyStats(), SOLITAIRED_PREFILL, 1), { drawCount: 1, scoring: 'standard', won: true, timeMs: 1, moves: 1, score: 1 });
+    expect(r.draw1.imported).toEqual({ source: 'solitaired', at: 1 });
+    expect(parseStats(JSON.parse(JSON.stringify(r)))).toEqual(r);
+  });
+  it('upgrades v1 stats to v2 without a marker', () => {
+    const v1 = { ...emptyStats(), v: 1 };
+    const p = parseStats(v1);
+    expect(p.v).toBe(2);
+    expect(p.draw1.imported).toBeUndefined();
+  });
+  it('validates the form', () => {
+    expect(parseImportForm({ played: '5561', won: '4089', time: '0:34', moves: '102' })).toEqual({ ok: true, value: SOLITAIRED_PREFILL });
+    expect(parseImportForm({ played: '10', won: '4', time: '', moves: '' })).toEqual({ ok: true, value: { played: 10, won: 4, timeMs: null, moves: null } });
+    expect(parseImportForm({ played: '3', won: '4', time: '', moves: '' }).ok).toBe(false);
+    expect(parseImportForm({ played: '-1', won: '0', time: '', moves: '' }).ok).toBe(false);
+    expect(parseImportForm({ played: '5', won: '1', time: '1:75', moves: '' }).ok).toBe(false);
   });
 });
 

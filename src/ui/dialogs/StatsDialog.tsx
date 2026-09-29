@@ -1,5 +1,7 @@
-import { winRate, type ModeStats, type Stats } from '../../store/stats';
+import { useEffect, useState } from 'react';
+import { winRate, type ImportInput, type ModeStats, type Stats } from '../../store/stats';
 import { formatTime } from '../format';
+import { ImportForm } from './ImportForm';
 import { Modal } from './Modal';
 
 const ROWS: [string, (m: ModeStats) => string][] = [
@@ -13,28 +15,54 @@ const ROWS: [string, (m: ModeStats) => string][] = [
   ['Best score', (m) => (m.bestScore === null ? '—' : String(m.bestScore))],
 ];
 
-export function StatsDialog({ open, stats, onClose }: { open: boolean; stats: Stats; onClose(): void }) {
+export function StatsDialog({ open, stats, onImport, onClose }: { open: boolean; stats: Stats; onImport(v: ImportInput): void; onClose(): void }) {
+  const [importing, setImporting] = useState(false);
+  useEffect(() => {
+    if (!open) setImporting(false);
+  }, [open]);
   return (
-    <Modal open={open} title="Statistics" onClose={onClose} actions={<button type="button" className="primary" onClick={onClose}>Close</button>}>
-      <table className="stats">
-        <thead>
-          <tr>
-            <th />
-            <th scope="col">Draw 1</th>
-            <th scope="col">Draw 3</th>
-          </tr>
-        </thead>
-        <tbody>
-          {ROWS.map(([label, get]) => (
-            <tr key={label}>
-              <th scope="row">{label}</th>
-              <td>{get(stats.draw1)}</td>
-              <td>{get(stats.draw3)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {stats.vegasBank !== 0 && <p className="note">Vegas bank: {stats.vegasBank < 0 ? `-$${-stats.vegasBank}` : `$${stats.vegasBank}`}</p>}
+    <Modal
+      open={open}
+      title="Statistics"
+      onClose={onClose}
+      actions={importing ? undefined : <button type="button" className="primary" onClick={onClose}>Close</button>}
+    >
+      {importing ? (
+        <ImportForm
+          onImport={(v) => {
+            onImport(v);
+            setImporting(false);
+          }}
+          onCancel={() => setImporting(false)}
+        />
+      ) : (
+        <>
+          <table className="stats">
+            <thead>
+              <tr>
+                <th />
+                <th scope="col">Draw 1</th>
+                <th scope="col">Draw 3</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ROWS.map(([label, get]) => (
+                <tr key={label}>
+                  <th scope="row">{label}</th>
+                  <td>{get(stats.draw1)}</td>
+                  <td>{get(stats.draw3)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {stats.vegasBank !== 0 && <p className="note">Vegas bank: {stats.vegasBank < 0 ? `-$${-stats.vegasBank}` : `$${stats.vegasBank}`}</p>}
+          {stats.draw1.imported ? (
+            <p className="note">Imported from solitaired.com on {new Date(stats.draw1.imported.at).toLocaleDateString()}</p>
+          ) : (
+            <button type="button" className="link-btn" onClick={() => setImporting(true)}>Import from solitaired.com</button>
+          )}
+        </>
+      )}
     </Modal>
   );
 }

@@ -263,3 +263,15 @@ test('the table switch changes the look and persists across reload', async ({ pa
   await expect(page.locator('.app')).toHaveClass(/table-paper/);
   await expect(page.getByRole('radio', { name: 'Paper table' })).toHaveAttribute('aria-checked', 'true');
 });
+
+test('imports solitaired stats once', async ({ page }) => {
+  await freshGame(page, { seed: SEED });
+  await page.getByRole('button', { name: 'Stats' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Statistics' });
+  await dialog.getByRole('button', { name: 'Import from solitaired.com' }).click();
+  await expect(dialog.getByLabel('Games played')).toHaveValue('5561');
+  await dialog.getByRole('button', { name: 'Import' }).click();
+  await expect(dialog.getByRole('row', { name: /Played/ })).toContainText('5561');
+  await expect(dialog.getByText(/Imported from solitaired\.com on/)).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Import from solitaired.com' })).toHaveCount(0);
+});
