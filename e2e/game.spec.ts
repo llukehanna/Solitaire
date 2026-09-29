@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { deal } from '../src/engine/deal';
+import { applyMove } from '../src/engine/apply';
 import { destinationsFor, legalMoves } from '../src/engine/movegen';
 import type { GameState, Move, PileId } from '../src/engine/types';
 import { solve } from '../src/solver/solve';
@@ -63,6 +64,40 @@ test('tapping the stock draws; tapping a playable card moves it', async ({ page 
     await clickStock(page);
   }
   throw new Error('no tappable move found in 30 draws');
+});
+
+/** A tappable card whose move exposes another tappable card in the same spot (so a stray second click would move it too). */
+function chainedTap(s: GameState): { id: number } | null {
+  const sources: PileId[] = ['W', ...s.tableau.map((_, i) => `T${i}` as PileId)];
+  for (const from of sources) {
+    const pile = from === 'W' ? s.waste : s.tableau[Number(from.slice(1))].cards;
+    const id = pile[pile.length - 1];
+    if (id === undefined) continue;
+    const [to] = destinationsFor(s, from, 1);
+    if (!to) continue;
+    const s2 = applyMove(s, { type: 'move', from, to, count: 1 });
+    const pile2 = from === 'W' ? s2.waste : s2.tableau[Number(from.slice(1))].cards;
+    if (pile2.length && destinationsFor(s2, from, 1).length) return { id };
+  }
+  return null;
+}
+
+test('a fast double-click makes exactly one move', async ({ page }) => {
+  await freshGame(page, { seed: SEED });
+  for (let i = 0; i < 60; i++) {
+    const s = await getState(page);
+    const tap = chainedTap(s) ?? (i >= 30 ? firstTap(s) : null);
+    if (tap) {
+      const before = (await getSession(page)).turns.length;
+      const box = (await page.locator(`#card-${tap.id}`).boundingBox())!;
+      await page.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2);
+      await page.waitForTimeout(500);
+      expect((await getSession(page)).turns.length).toBe(before + 1);
+      return;
+    }
+    await clickStock(page);
+  }
+  throw new Error('no tappable card found');
 });
 
 test('drag and drop moves a card onto a legal column', async ({ page }) => {

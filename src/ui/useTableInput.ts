@@ -32,20 +32,34 @@ interface Press {
 
 const DRAG_THRESHOLD = 5;
 const DOUBLE_TAP_MS = 300;
+const DOUBLE_TAP_SLOP = 8;
 
 export function useTableInput(args: Args) {
   const a = useRef(args);
   a.current = args;
   const press = useRef<Press | null>(null);
-  const lastTap = useRef<{ id: CardId; t: number } | null>(null);
+  /** Time and position of the last tap that reached the move logic, to swallow the second half of a double-tap. */
+  const lastTap = useRef<{ x: number; y: number; t: number } | null>(null);
 
   const dragPoint = (p: Press, e: PointerEvent) => ({
     x: e.clientX - p.tableLeft - p.offsetX,
     y: e.clientY - p.tableTop - p.offsetY,
   });
 
+  /** Drop a press without committing anything: put any dragged cards back where they were. */
+  function abandon(p: Press) {
+    p.saved.forEach(({ el, transform, z }) => {
+      el.classList.remove('dragging');
+      el.style.zIndex = z;
+      el.style.transform = transform;
+    });
+    if (press.current === p) press.current = null;
+  }
+
   function onPointerDown(e: PointerEvent<HTMLDivElement>) {
     const { state, positions, locked } = a.current;
+    // A press that never got its up/cancel (e.g. a second finger, or lost capture) must not wedge input.
+    if (press.current && press.current.pointerId !== e.pointerId) abandon(press.current);
     if (locked || !positions || e.button !== 0 || press.current) return;
     const target = e.target as Element;
     const cardEl = target.closest<HTMLElement>('[data-card]');
@@ -95,11 +109,13 @@ export function useTableInput(args: Args) {
     });
   }
 
-  function finish(e: PointerEvent<HTMLDivElement>, cancelled: boolean) {
+  function finish(e: PointerEvent<HTMLDivElement>, wasCancelled: boolean) {
     const p = press.current;
     if (!p || e.pointerId !== p.pointerId) return;
     press.current = null;
-    const { state, layout, positions, onTurn, onStockTap, onReject } = a.current;
+    const { state, layout, positions, onTurn, onStockTap, onReject, locked } = a.current;
+    // A modal may have opened mid-gesture: spring back instead of committing.
+    const cancelled = wasCancelled || locked;
 
     if (p.dragging && p.pickup && positions && layout) {
       const { x, y } = dragPoint(p, e);
@@ -134,8 +150,11 @@ export function useTableInput(args: Args) {
     }
     if (!p.pickup || p.cardId === null) return;
     const now = performance.now();
-    if (lastTap.current && lastTap.current.id === p.cardId && now - lastTap.current.t < DOUBLE_TAP_MS) return;
-    lastTap.current = { id: p.cardId, t: now };
+    // The first tap of a double-click may have moved the card away, so the second one lands on whatever is
+    // underneath. Ignore any tap that follows quickly at (nearly) the same spot, whatever card it hits.
+    const prev = lastTap.current;
+    if (prev && now - prev.t < DOUBLE_TAP_MS && Math.hypot(e.clientX - prev.x, e.clientY - prev.y) <= DOUBLE_TAP_SLOP) return;
+    lastTap.current = { x: e.clientX, y: e.clientY, t: now };
     const [to] = destinationsFor(state, p.pickup.from, p.pickup.count);
     if (to) onTurn([{ type: 'move', from: p.pickup.from, to, count: p.pickup.count }]);
     else onReject?.();
@@ -146,5 +165,6 @@ export function useTableInput(args: Args) {
     onPointerMove,
     onPointerUp: (e: PointerEvent<HTMLDivElement>) => finish(e, false),
     onPointerCancel: (e: PointerEvent<HTMLDivElement>) => finish(e, true),
+    onLostPointerCapture: (e: PointerEvent<HTMLDivElement>) => finish(e, true),
   };
 }
