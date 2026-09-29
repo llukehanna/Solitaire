@@ -23,9 +23,19 @@ interface ToolbarProps {
   onTable(t: TableTheme): void;
 }
 
-function TbButton({ icon, label, ...rest }: { icon: IconName; label: string } & ButtonHTMLAttributes<HTMLButtonElement>) {
+function TbButton({ icon, label, onClick, ...rest }: { icon: IconName; label: string } & ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button type="button" className="tb-btn" aria-label={label} title={label} {...rest}>
+    <button
+      type="button"
+      className="tb-btn"
+      aria-label={label}
+      title={label}
+      onClick={(e) => {
+        onClick?.(e);
+        if (e.detail > 0) e.currentTarget.blur(); // pointer click (detail 0 = keyboard): let Space reach the table
+      }}
+      {...rest}
+    >
       <Icon name={icon} />
       <span className="tb-label">{label}</span>
     </button>
@@ -35,7 +45,10 @@ function TbButton({ icon, label, ...rest }: { icon: IconName; label: string } & 
 export function Toolbar(p: ToolbarProps) {
   const menu = useRef<HTMLDetailsElement>(null);
   const pick = (fn: () => void) => () => {
-    if (menu.current) menu.current.open = false;
+    if (menu.current) {
+      menu.current.open = false;
+      (menu.current.querySelector('summary') as HTMLElement | null)?.blur();
+    }
     fn();
   };
   return (

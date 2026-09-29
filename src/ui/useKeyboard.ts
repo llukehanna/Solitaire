@@ -65,13 +65,18 @@ export function useKeyboard(args: Args) {
       if (key === 'Escape') return cancel();
       if (onControl) return; // let buttons handle Enter/Space/arrows themselves
 
+      if (key === ' ') {
+        e.preventDefault(); // no page scroll
+        return e.repeat ? undefined : onStockTap();
+      }
+
       const dir = ARROWS[key];
       if (dir) {
         e.preventDefault();
         setFocus((f) => stepFocus(state, f, dir));
         return;
       }
-      if (key === 'Enter' || key === ' ') {
+      if (key === 'Enter') {
         e.preventDefault();
         const { focus: f, selection: sel } = live.current;
         if (!f) return setFocus(stepFocus(state, null, 'right'));

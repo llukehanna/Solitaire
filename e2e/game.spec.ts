@@ -195,6 +195,17 @@ test('keyboard: D draws, Z undoes, arrows + Enter move a card', async ({ page })
   throw new Error('no keyboard move found in 30 draws');
 });
 
+test('Space draws from the stock, even right after clicking a toolbar button', async ({ page }) => {
+  await freshGame(page, { seed: SEED });
+  await page.locator('.table').focus();
+  await page.keyboard.press(' ');
+  await expect.poll(() => pileCount(page, 'W')).toBe(1);
+  await page.getByRole('button', { name: 'Undo' }).click();
+  await expect.poll(() => pileCount(page, 'W')).toBe(0);
+  await page.keyboard.press(' ');
+  await expect.poll(() => pileCount(page, 'W')).toBe(1); // drew again, did not re-press Undo
+});
+
 test('layout fits the viewport without scrolling', async ({ page }) => {
   await freshGame(page, { seed: SEED });
   const m = await page.evaluate(() => ({

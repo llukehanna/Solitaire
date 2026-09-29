@@ -110,6 +110,9 @@
 .toggle input { width: 18px; height: 18px; margin: 1px 0 0; accent-color: var(--accent); }
 .toggle small { display: block; color: var(--mute); font-size: 12px; margin-top: 2px; }
 .note { margin: 0; font-size: 13px; color: var(--mute); }
+.keys { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; margin: 0; font-size: 13px; }
+.keys dt { font-family: var(--font-mono); color: var(--ink); }
+.keys dd { margin: 0; color: var(--mute); }
 .stats { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 13px; font-variant-numeric: tabular-nums; }
 .stats th, .stats td { padding: 9px 6px; border-bottom: 1px solid var(--panel-line); text-align: right; }
 .stats thead th { font-family: var(--font-ui); font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mute); }
