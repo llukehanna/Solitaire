@@ -12,11 +12,12 @@ interface CardProps {
   hinted: boolean;
   focused: boolean;
   selected: boolean;
+  stacked: boolean;
 }
 
 export const Card = memo(
   forwardRef<HTMLDivElement, CardProps>(function Card(p, ref) {
-    const cls = ['card', p.pos.faceUp && 'faceup', p.hinted && 'hinted', p.focused && 'focused', p.selected && 'selected']
+    const cls = ['card', p.pos.faceUp && 'faceup', p.hinted && 'hinted', p.focused && 'focused', p.selected && 'selected', p.stacked && 'stacked']
       .filter(Boolean)
       .join(' ');
     return (

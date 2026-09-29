@@ -98,6 +98,16 @@ export function Table(p: TableProps) {
   );
   const selected = useMemo(() => new Set(p.selection ? pickupIds(p.state, p.selection) : []), [p.selection, p.state]);
   const activeId = focusedElementId(p.state, p.focus);
+  // Cards buried in the stock, waste or a foundation sit at one position; only the top two draw a shadow so the pile doesn't halo.
+  const stackedIds = useMemo(() => {
+    const out = new Set<CardId>();
+    for (const k of PILES) {
+      if (k[0] === 'T') continue;
+      const cards = pileCards(p.state, k);
+      for (let i = 0; i < cards.length - 2; i++) out.add(cards[i]);
+    }
+    return out;
+  }, [p.state]);
 
   // When keyboard focus starts, move DOM focus to the table so aria-activedescendant is announced.
   useEffect(() => {
@@ -166,6 +176,7 @@ export function Table(p: TableProps) {
             hinted={hinted.has(id)}
             focused={activeId === `card-${id}`}
             selected={selected.has(id)}
+            stacked={stackedIds.has(id)}
           />
         ))}
       {hintTarget && (

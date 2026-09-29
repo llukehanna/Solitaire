@@ -34,31 +34,28 @@
   left: 0;
   top: 0;
   border-radius: calc(var(--card-w) * 0.055);
-  transition: transform var(--move-ms) cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform var(--move-ms) var(--ease);
   will-change: transform;
   cursor: pointer;
-  perspective: 900px;
 }
-.card-inner {
-  position: absolute;
-  inset: 0;
-  transform-style: preserve-3d;
-  transition: transform var(--flip-ms) ease;
-  border-radius: inherit;
-}
-.card:not(.faceup) .card-inner { transform: rotateY(180deg); }
+.card-inner { position: absolute; inset: 0; border-radius: inherit; }
 .card-front,
 .card-back {
   position: absolute;
   inset: 0;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
   border-radius: inherit;
   overflow: hidden;
   box-shadow: var(--card-shadow);
-  background: var(--card-face);
+  transition: opacity var(--flip-ms) ease-out, transform var(--flip-ms) var(--ease), box-shadow 160ms var(--ease);
 }
-.card-back { transform: rotateY(180deg); background: var(--back); }
+/* Flip: the face fades in over the back with a slight scale-up, no 3D turn. */
+.card-front { background: var(--card-face); opacity: 0; transform: scale(0.96); }
+.card.faceup .card-front { opacity: 1; transform: none; }
+.card.faceup .card-back { opacity: 0; }
+.card-back { background: var(--back); box-shadow: var(--back-shadow); }
+/* Buried cards in stock, waste and foundations share one position; skip their shadows to avoid a muddy halo. */
+.card.stacked .card-front,
+.card.stacked .card-back { box-shadow: none; }
 .card-back::after {
   content: '';
   position: absolute;
@@ -77,7 +74,7 @@
 .face-suit { width: calc(var(--card-w) * 0.19); height: calc(var(--card-w) * 0.19); fill: currentColor; }
 .face-pip { position: absolute; right: 8%; bottom: 6%; width: calc(var(--card-w) * 0.47); height: calc(var(--card-w) * 0.47); fill: currentColor; }
 .card.dragging { transition: none; cursor: grabbing; }
-.card.dragging .card-front { box-shadow: var(--card-shadow-lift); }
+.card.dragging .card-front { box-shadow: var(--card-shadow-lift); transform: scale(1.03); }
 .card.hinted .card-front { animation: hint-pulse 800ms ease-in-out 3; }
 .card.selected .card-front { box-shadow: 0 0 0 3px var(--focus); }
 .card.focused,
@@ -95,7 +92,6 @@
 @keyframes hint-pulse { 50% { box-shadow: 0 0 0 4px var(--focus), 0 0 18px var(--focus); } }
 @keyframes hint-glow { 50% { opacity: 0.35; } }
 @media (prefers-reduced-motion: reduce) {
-  .card, .card-inner { transition: none !important; }
   .card.hinted .card-front, .hint-target { animation: none; }
 }
 .win-cascade { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 4500; cursor: pointer; }
