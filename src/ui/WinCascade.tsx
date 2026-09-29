@@ -88,7 +88,19 @@ export function WinCascade({ layout, theme, fourColor, onDone }: Props) {
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+
+    // Escape, Enter or Space skips the cascade, same as a tap.
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        done.current();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('keydown', onKey);
+    };
   }, [layout, theme, fourColor]);
 
   return <canvas ref={ref} className="win-cascade" aria-hidden="true" onPointerDown={() => done.current()} />;

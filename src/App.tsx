@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { appClassName, effectiveAnimation } from './ui/appClass';
+import { describeTurn } from './ui/announce';
 import { NoMovesDialog } from './ui/dialogs/NoMovesDialog';
 import { ResultDialog } from './ui/dialogs/ResultDialog';
 import { SettingsDialog } from './ui/dialogs/SettingsDialog';
@@ -11,6 +12,7 @@ import { Toast, useToast } from './ui/Toast';
 import { Toolbar } from './ui/Toolbar';
 import { turnEffect } from './ui/turnEffect';
 import { useGame } from './ui/useGame';
+import { useKeyboard } from './ui/useKeyboard';
 import { useSolver } from './ui/useSolver';
 
 type DialogName = 'settings' | 'stats' | null;
@@ -23,8 +25,29 @@ export default function App() {
   const solver = useSolver(game, showToast);
   const [celebrate, setCelebrate] = useState(false);
   const [showResult, setShowResult] = useState(session.status === 'won');
+  const [announcement, setAnnouncement] = useState('');
 
-  // Sounds and the win sequence react to state transitions.
+  const playing = session.status === 'playing';
+  const stuck = playing ? solver.stuck : null;
+  const anyDialog = dialog !== null || stuck !== null || showResult;
+  const reject = () => {
+    if (settings.sound) playSound('nope');
+    setAnnouncement("Can't move there.");
+  };
+
+  const keys = useKeyboard({
+    enabled: playing && !anyDialog,
+    state: session.state,
+    onTurn: game.turn,
+    onStockTap: game.stockTap,
+    onUndo: game.undo,
+    onRedo: game.redo,
+    onHint: solver.requestHint,
+    onNew: () => game.newGame(),
+    onReject: reject,
+  });
+
+  // Sounds, announcements and the win sequence react to session transitions.
   const prev = useRef(session);
   useEffect(() => {
     const before = prev.current;
@@ -35,9 +58,18 @@ export default function App() {
       if (effect) playSound(effect);
     }
     if (before.status !== 'won' && session.status === 'won') {
+      setAnnouncement('You won!');
       if (settings.sound) playSound('win');
       if (effectiveAnimation(settings) === 'off') setShowResult(true);
       else setCelebrate(true);
+    } else if (before.status === 'playing' && session.status === 'finishing') {
+      setAnnouncement('All cards revealed. Finishing automatically.');
+    } else if (session.seed !== before.seed || (session.turns.length === 0 && before.turns.length > 0 && session.undos === 0)) {
+      setAnnouncement('New deal.');
+    } else if (session.turns.length > before.turns.length) {
+      setAnnouncement(describeTurn(session.history[session.history.length - 1], session.turns[session.turns.length - 1]));
+    } else if (session.undos > before.undos) {
+      setAnnouncement('Move undone.');
     }
     if (session.status !== 'won') {
       setCelebrate(false);
@@ -45,12 +77,13 @@ export default function App() {
     }
   }, [session, settings]);
 
-  const playing = session.status === 'playing';
-  const stuck = playing ? solver.stuck : null;
-  const anyDialog = dialog !== null || stuck !== null || showResult;
   useEffect(() => {
     holdTimer(anyDialog);
   }, [anyDialog, holdTimer]);
+
+  useEffect(() => {
+    if (solver.hint) setAnnouncement('Hint shown.');
+  }, [solver.hint]);
 
   const closeStuck = (then?: () => void) => () => {
     solver.dismissStuck();
@@ -80,11 +113,11 @@ export default function App() {
           settings={settings}
           locked={!playing || anyDialog}
           hint={solver.hint}
-          focus={null}
-          selection={null}
+          focus={keys.focus}
+          selection={keys.selection}
           onTurn={game.turn}
           onStockTap={game.stockTap}
-          onReject={() => settings.sound && playSound('nope')}
+          onReject={reject}
           celebrate={celebrate}
           onCelebrated={() => {
             setCelebrate(false);
@@ -93,6 +126,9 @@ export default function App() {
         />
       </main>
       <StatusBar session={session} settings={settings} vegasBank={stats.vegasBank} />
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
+        {announcement}
+      </div>
       <SettingsDialog
         open={dialog === 'settings'}
         settings={settings}
