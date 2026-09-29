@@ -19,12 +19,13 @@ export default function App() {
   const [toast, showToast] = useToast();
   const solver = useSolver(game, showToast);
 
-  const anyDialog = dialog !== null || solver.stuck !== null;
+  const playing = session.status === 'playing';
+  const stuck = playing ? solver.stuck : null;
+  const anyDialog = dialog !== null || stuck !== null;
   useEffect(() => {
     holdTimer(anyDialog);
   }, [anyDialog, holdTimer]);
 
-  const playing = session.status === 'playing';
   const closeStuck = (then?: () => void) => () => {
     solver.dismissStuck();
     then?.();
@@ -70,7 +71,7 @@ export default function App() {
       />
       <StatsDialog open={dialog === 'stats'} stats={stats} onClose={() => setDialog(null)} />
       <NoMovesDialog
-        kind={playing ? solver.stuck : null}
+        kind={stuck}
         canUndo={session.history.length > 0}
         busy={solver.busy === 'rewind'}
         onUndo={closeStuck(game.undo)}
