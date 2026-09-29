@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { describeTurn } from '../../src/ui/announce';
+import { describeHint, describePickup, describeTurn } from '../../src/ui/announce';
 import { cards, makeState } from '../helpers';
 
 describe('describeTurn', () => {
@@ -14,5 +14,22 @@ describe('describeTurn', () => {
     );
     const r = makeState({ waste: cards('2C') });
     expect(describeTurn(r, [{ type: 'recycle' }])).toBe('Turned the waste back over.');
+  });
+});
+
+describe('describeHint and describePickup', () => {
+  const s = makeState({ stock: cards('2C'), cols: [['9C 8H 7S', 1], ['9S', 0]] });
+  it('speaks move hints', () => {
+    expect(describeHint(s, { kind: 'move', from: 'T0', count: 2, to: 'T1' })).toBe('Hint: move 8 of hearts and 1 more to column 2.');
+    expect(describeHint(s, { kind: 'move', from: 'T0', count: 1, to: 'F3' })).toBe('Hint: move 7 of spades to the foundation.');
+  });
+  it('speaks stock hints', () => {
+    expect(describeHint(s, { kind: 'stock' })).toBe('Hint: draw from the stock.');
+    const r = makeState({ waste: cards('2C') });
+    expect(describeHint(r, { kind: 'stock' })).toBe('Hint: turn the waste back over.');
+  });
+  it('speaks pickups', () => {
+    expect(describePickup(s, { from: 'T0', count: 2 })).toBe('Picked up 8 of hearts and 1 more.');
+    expect(describePickup(s, { from: 'T0', count: 1 })).toBe('Picked up 7 of spades.');
   });
 });

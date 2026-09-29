@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { appClassName, effectiveAnimation } from './ui/appClass';
-import { describeTurn } from './ui/announce';
+import { describeHint, describeTurn } from './ui/announce';
 import { NoMovesDialog } from './ui/dialogs/NoMovesDialog';
 import { ResultDialog } from './ui/dialogs/ResultDialog';
 import { SettingsDialog } from './ui/dialogs/SettingsDialog';
@@ -25,7 +25,9 @@ export default function App() {
   const solver = useSolver(game, showToast);
   const [celebrate, setCelebrate] = useState(false);
   const [showResult, setShowResult] = useState(session.status === 'won');
-  const [announcement, setAnnouncement] = useState('');
+  // n changes on every announcement so identical messages still mutate the live region and are re-read.
+  const [announcement, setAnnouncementState] = useState({ text: '', n: 0 });
+  const setAnnouncement = useCallback((text: string) => setAnnouncementState((a) => ({ text, n: a.n + 1 })), []);
 
   const playing = session.status === 'playing';
   const stuck = playing ? solver.stuck : null;
@@ -45,6 +47,7 @@ export default function App() {
     onHint: solver.requestHint,
     onNew: () => game.newGame(),
     onReject: reject,
+    onAnnounce: setAnnouncement,
   });
 
   // Sounds, announcements and the win sequence react to session transitions.
@@ -82,8 +85,8 @@ export default function App() {
   }, [anyDialog, holdTimer]);
 
   useEffect(() => {
-    if (solver.hint) setAnnouncement('Hint shown.');
-  }, [solver.hint]);
+    if (solver.hint) setAnnouncement(describeHint(session.state, solver.hint));
+  }, [solver.hint, setAnnouncement]);
 
   const closeStuck = (then?: () => void) => () => {
     solver.dismissStuck();
@@ -127,7 +130,8 @@ export default function App() {
       </main>
       <StatusBar session={session} settings={settings} vegasBank={stats.vegasBank} />
       <div className="sr-only" aria-live="polite" aria-atomic="true">
-        {announcement}
+        {announcement.text}
+        {announcement.n % 2 ? '' : '\u00a0'}
       </div>
       <SettingsDialog
         open={dialog === 'settings'}

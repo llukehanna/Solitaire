@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { GameState, Move } from '../engine/types';
+import { describePickup } from './announce';
 import { activate, clampFocus, stepFocus } from './focus';
 import type { Focus, Selection } from './types';
 
@@ -13,6 +14,7 @@ interface Args {
   onHint(): void;
   onNew(): void;
   onReject(): void;
+  onAnnounce?(text: string): void;
 }
 
 const ARROWS: Record<string, 'left' | 'right' | 'up' | 'down'> = {
@@ -38,7 +40,11 @@ export function useKeyboard(args: Args) {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const { enabled, state, onTurn, onStockTap, onUndo, onRedo, onHint, onNew, onReject } = a.current;
+      const { enabled, state, onTurn, onStockTap, onUndo, onRedo, onHint, onNew, onReject, onAnnounce } = a.current;
+      const cancel = () => {
+        if (live.current.selection) onAnnounce?.('Cancelled.');
+        setSelection(null);
+      };
       if (!enabled) return;
       const target = e.target as HTMLElement | null;
       if (target?.closest('input, select, textarea, dialog')) return;
@@ -50,12 +56,13 @@ export function useKeyboard(args: Args) {
       if (mod && (key.toLowerCase() === 'y' || (e.shiftKey && key.toLowerCase() === 'z'))) return e.preventDefault(), onRedo();
       if (mod || e.altKey) return;
 
-      if (key === 'z') return onUndo();
-      if (key === 'Z') return onRedo();
-      if (key === 'h' || key === 'H') return onHint();
-      if (key === 'd' || key === 'D') return onStockTap();
-      if (key === 'n' || key === 'N') return onNew();
-      if (key === 'Escape') return setSelection(null);
+      const k = key.toLowerCase();
+      // Use Shift (not letter case) so Caps Lock does not flip undo and redo.
+      if (k === 'z') return e.shiftKey ? onRedo() : onUndo();
+      if (k === 'h') return e.repeat ? undefined : onHint();
+      if (k === 'd') return onStockTap();
+      if (k === 'n') return e.repeat ? undefined : onNew();
+      if (key === 'Escape') return cancel();
       if (onControl) return; // let buttons handle Enter/Space/arrows themselves
 
       const dir = ARROWS[key];
@@ -70,8 +77,10 @@ export function useKeyboard(args: Args) {
         if (!f) return setFocus(stepFocus(state, null, 'right'));
         const act = activate(state, f, sel);
         if (act.action === 'stock') onStockTap();
-        else if (act.action === 'select') setSelection(act.selection);
-        else if (act.action === 'cancel') setSelection(null);
+        else if (act.action === 'select') {
+          setSelection(act.selection);
+          onAnnounce?.(describePickup(state, act.selection));
+        } else if (act.action === 'cancel') cancel();
         else if (act.action === 'move') onTurn([act.move]);
         else onReject();
       }
