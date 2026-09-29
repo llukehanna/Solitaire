@@ -34,6 +34,8 @@ export interface Game {
   updateSettings(patch: Partial<Settings>): boolean;
   pauseTimer(): void;
   resumeTimer(): void;
+  /** Hold the timer paused (e.g. while a dialog is open); visibility changes will not resume it while held. */
+  holdTimer(held: boolean): void;
 }
 
 export function useGame(): Game {
@@ -69,10 +71,10 @@ export function useGame(): Game {
     return () => window.removeEventListener('pagehide', save);
   }, []);
 
-  // Record a win once, on the transition into 'won'.
+  // Record a win once. A 'finishing' game is a forced win, so record on the way into 'finishing' or 'won'.
   const prevStatus = useRef(session.status);
   useEffect(() => {
-    if (prevStatus.current !== 'won' && session.status === 'won') record(session, true);
+    if (prevStatus.current === 'playing' && (session.status === 'finishing' || session.status === 'won')) record(session, true);
     prevStatus.current = session.status;
   }, [session, record]);
 
@@ -86,10 +88,13 @@ export function useGame(): Game {
     return () => window.clearTimeout(id);
   }, [session]);
 
-  // Pause the timer while the tab is hidden.
+  // Pause the timer while the tab is hidden (and keep it paused while a dialog holds it).
+  const heldRef = useRef(false);
   useEffect(() => {
-    const onVisibility = () =>
-      dispatch(document.hidden ? { type: 'pause', now: Date.now() } : { type: 'resume', now: Date.now() });
+    const onVisibility = () => {
+      if (document.hidden) dispatch({ type: 'pause', now: Date.now() });
+      else if (!heldRef.current) dispatch({ type: 'resume', now: Date.now() });
+    };
     onVisibility();
     document.addEventListener('visibilitychange', onVisibility);
     return () => document.removeEventListener('visibilitychange', onVisibility);
@@ -97,7 +102,7 @@ export function useGame(): Game {
 
   const abandonCurrent = useCallback(() => {
     const s = sessionRef.current;
-    if (s.turns.length > 0 && s.status !== 'won') record(s, false);
+    if (s.turns.length > 0 && s.status !== 'won' && s.status !== 'finishing') record(s, false);
   }, [record]);
 
   const turn = useCallback(
@@ -174,5 +179,9 @@ export function useGame(): Game {
     updateSettings,
     pauseTimer: useCallback(() => dispatch({ type: 'pause', now: Date.now() }), []),
     resumeTimer: useCallback(() => dispatch({ type: 'resume', now: Date.now() }), []),
+    holdTimer: useCallback((held: boolean) => {
+      heldRef.current = held;
+      dispatch({ type: held ? 'pause' : 'resume', now: Date.now() });
+    }, []),
   };
 }
