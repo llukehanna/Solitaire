@@ -43,6 +43,6 @@ export function autoFinish(s: GameState): Move[] | null {
   }
   if (isWon(cur)) return moves;
 
-  const r = solve(s, { maxNodes: 50_000, limitRecycles: true });
+  const r = solve(s, { maxNodes: 50_000, limitRecycles: true, deadline: Date.now() + 150 });
   return r.status === 'winnable' ? r.solution : null;
 }
