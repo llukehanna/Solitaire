@@ -1,6 +1,5 @@
 import { forwardRef, memo } from 'react';
 import { cardName, type CardId } from '../engine/cards';
-import type { Theme } from '../store/settings';
 import { CardFront } from './CardFront';
 import type { CardPos } from './layout';
 
@@ -9,8 +8,6 @@ interface CardProps {
   pos: CardPos;
   width: number;
   height: number;
-  theme: Theme;
-  fourColor: boolean;
   moving: boolean;
   hinted: boolean;
   focused: boolean;
@@ -41,7 +38,7 @@ export const Card = memo(
         }}
       >
         <div className="card-inner">
-          <div className="card-front">{p.pos.faceUp && <CardFront id={p.id} theme={p.theme} fourColor={p.fourColor} />}</div>
+          <div className="card-front">{p.pos.faceUp && <CardFront id={p.id} />}</div>
           <div className="card-back" />
         </div>
       </div>

@@ -1,14 +1,23 @@
 import { memo } from 'react';
-import { cardCode, type CardId } from '../engine/cards';
-import type { Theme } from '../store/settings';
-import { minimalCardSvg } from './cards/minimal';
+import { rankLabel, suitOf, type CardId } from '../engine/cards';
+import { SUIT_PATHS } from './cards/suits';
 
-export const classicCardUrl = (id: CardId, fourColor: boolean) =>
-  `/cards/${fourColor ? 'classic-4c' : 'classic'}/${cardCode(id)}.svg`;
+const Glyph = ({ d, className }: { d: string; className: string }) => (
+  <svg className={className} viewBox="0 0 100 100" aria-hidden="true">
+    <path d={d} />
+  </svg>
+);
 
-export const CardFront = memo(function CardFront(p: { id: CardId; theme: Theme; fourColor: boolean }) {
-  if (p.theme === 'classic') {
-    return <img className="card-img" src={classicCardUrl(p.id, p.fourColor)} alt="" draggable={false} />;
-  }
-  return <div className="card-svg" dangerouslySetInnerHTML={{ __html: minimalCardSvg(p.id) }} />;
+/** Corner index (rank over suit) where a fanned column leaves it visible, plus one big pip bottom-right. */
+export const CardFront = memo(function CardFront({ id }: { id: CardId }) {
+  const suit = suitOf(id);
+  return (
+    <div className={`face suit-${suit}`}>
+      <span className="face-index">
+        <span className="face-rank">{rankLabel(id)}</span>
+        <Glyph d={SUIT_PATHS[suit]} className="face-suit" />
+      </span>
+      <Glyph d={SUIT_PATHS[suit]} className="face-pip" />
+    </div>
+  );
 });
