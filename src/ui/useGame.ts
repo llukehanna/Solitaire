@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { pickSeed } from '../deals/bank';
+import { applyMoves } from '../engine/apply';
 import { canDraw, canRecycle } from '../engine/rules';
 import type { DrawCount, Move } from '../engine/types';
 import { loadSavedGame, saveGame } from '../game/persist';
@@ -71,10 +72,11 @@ export function useGame(): Game {
     return () => window.removeEventListener('pagehide', save);
   }, []);
 
-  // Record a win once. A 'finishing' game is a forced win, so record on the way into 'finishing' or 'won'.
+  // Record a win once. A 'finishing' game is a forced win, so record on the way into 'finishing' or 'won',
+  // folding the queued finish moves into the state so moves and score are final.
   const prevStatus = useRef(session.status);
   useEffect(() => {
-    if (prevStatus.current === 'playing' && (session.status === 'finishing' || session.status === 'won')) record(session, true);
+    if (prevStatus.current === 'playing' && (session.status === 'finishing' || session.status === 'won')) record({ ...session, state: applyMoves(session.state, session.finishQueue) }, true);
     prevStatus.current = session.status;
   }, [session, record]);
 
@@ -181,7 +183,8 @@ export function useGame(): Game {
     resumeTimer: useCallback(() => dispatch({ type: 'resume', now: Date.now() }), []),
     holdTimer: useCallback((held: boolean) => {
       heldRef.current = held;
-      dispatch({ type: held ? 'pause' : 'resume', now: Date.now() });
+      if (held) dispatch({ type: 'pause', now: Date.now() });
+      else if (!document.hidden) dispatch({ type: 'resume', now: Date.now() });
     }, []),
   };
 }
