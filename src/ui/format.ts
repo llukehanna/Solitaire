@@ -15,6 +15,11 @@ const dollars = (n: number) => (n < 0 ? `-$${-n}` : `$${n}`);
 
 export function formatScore(session: Session, settings: Settings, vegasBank: number): string | null {
   if (session.scoring === 'none') return null;
-  if (session.scoring === 'vegas') return dollars(session.state.score + (settings.cumulativeVegas ? vegasBank : 0));
+  if (session.scoring === 'vegas') {
+    // The bank already includes a game as soon as it is recorded as won (on entering 'finishing'), so only
+    // add the live score while the game is still being played.
+    if (!settings.cumulativeVegas) return dollars(session.state.score);
+    return dollars(session.status === 'playing' ? session.state.score + vegasBank : vegasBank);
+  }
   return String(session.state.score);
 }
