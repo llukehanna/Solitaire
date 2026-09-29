@@ -78,6 +78,18 @@ export function SettingsDialog({ open, settings: s, deferredNote, onChange, onCl
         options={[['normal', 'Normal'], ['fast', 'Fast'], ['off', 'Off']]}
         onChange={(animation) => onChange({ animation })}
       />
+      <div>
+        <div className="label">Keyboard</div>
+        <dl className="keys">
+          <dt>Space / D</dt><dd>Draw</dd>
+          <dt>Arrows</dt><dd>Move focus</dd>
+          <dt>Enter</dt><dd>Pick up / drop</dd>
+          <dt>Esc</dt><dd>Cancel</dd>
+          <dt>Z / Shift+Z</dt><dd>Undo / redo</dd>
+          <dt>H</dt><dd>Hint</dd>
+          <dt>N</dt><dd>New game</dd>
+        </dl>
+      </div>
     </Modal>
   );
 }
