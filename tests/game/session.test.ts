@@ -119,4 +119,21 @@ describe('session', () => {
     const q = sessionReducer(p, { type: 'resume', now: 10_000 });
     expect(elapsed(q.timer, 11_000)).toBe(3000);
   });
+
+  it('keeps a card pulled off a foundation in the tableau when autoPlay is on', () => {
+    // 5♥ is safe (both black foundations are at 4), so auto-play would send it straight back.
+    const s = withState(
+      makeState({ foundations: [upTo('S', 4), upTo('H', 5), upTo('D', 4), upTo('C', 4)], cols: [['KD 6S', 1], ['5D', 0]], stock: cards('9C') }),
+    );
+    const pull: Move = { type: 'move', from: 'F1', to: 'T0', count: 1 };
+    const r = turn(s, [pull], true);
+    // Other safe cards still auto-play in the same turn.
+    expect(r.turns[0]).toEqual([pull, { type: 'move', from: 'T1', to: 'F2', count: 1 }]);
+    expect(r.state.tableau[0].cards).toHaveLength(3);
+    expect(r.state.foundations[1]).toHaveLength(4);
+    // …and on later turns too.
+    const r2 = turn(r, [draw], true);
+    expect(r2.turns[1]).toEqual([draw]);
+    expect(r2.state.tableau[0].cards).toHaveLength(3);
+  });
 });

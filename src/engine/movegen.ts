@@ -45,12 +45,12 @@ export function isSafeToFoundation(s: GameState, card: CardId): boolean {
   return opposite.every((f) => s.foundations[f].length >= r - 1);
 }
 
-export function nextSafeMove(s: GameState, includeWaste = true): Move | null {
+export function nextSafeMove(s: GameState, includeWaste = true, hold?: ReadonlySet<CardId>): Move | null {
   const sources: [PileId, CardId | undefined][] = [];
   if (includeWaste) sources.push(['W', s.waste[s.waste.length - 1]]);
   s.tableau.forEach((col, i) => sources.push([`T${i}`, col.cards[col.cards.length - 1]]));
   for (const [from, card] of sources) {
-    if (card === undefined) continue;
+    if (card === undefined || hold?.has(card)) continue;
     if (canPlayToFoundation(s, card) && isSafeToFoundation(s, card)) {
       return { type: 'move', from, to: `F${suitIndex(card)}`, count: 1 };
     }
@@ -58,10 +58,10 @@ export function nextSafeMove(s: GameState, includeWaste = true): Move | null {
   return null;
 }
 
-export function applySafeMoves(s: GameState, includeWaste = true): { state: GameState; moves: Move[] } {
+export function applySafeMoves(s: GameState, includeWaste = true, hold?: ReadonlySet<CardId>): { state: GameState; moves: Move[] } {
   const moves: Move[] = [];
   let cur = s;
-  for (let m = nextSafeMove(cur, includeWaste); m; m = nextSafeMove(cur, includeWaste)) {
+  for (let m = nextSafeMove(cur, includeWaste, hold); m; m = nextSafeMove(cur, includeWaste, hold)) {
     cur = applyMove(cur, m);
     moves.push(m);
   }
