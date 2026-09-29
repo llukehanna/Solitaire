@@ -1,7 +1,7 @@
 # Solitaire (Klondike) — Design Spec
 
 **Date:** 2026-09-29
-**Status:** Approved design, pending spec review
+**Status:** Approved
 **URL:** https://solitaire.lukeghanna.com (`solitare.lukeghanna.com` 308-redirects to it)
 
 ## Goal
@@ -37,12 +37,12 @@ Dependency direction: `ui → store → engine`, `ui → solver (via worker) →
 - **Deal:** 32-bit seed → mulberry32 PRNG → Fisher–Yates shuffle of 0–51 → standard Klondike layout (tableau column *i* gets *i+1* cards, top card face up; remaining 24 → stock). Seed fully determines the deal.
 - **Moves:** `draw`, `recycle`, `waste→tableau`, `waste→foundation`, `tableau→tableau` (any face-up run), `tableau→foundation`, `foundation→tableau`. Auto-flip of a newly exposed tableau card is part of the move that exposed it (so undo restores it).
 - **Rules:** tableau builds down, alternating colours; only Kings (or King-led runs) to empty columns; foundations build up by suit from Ace. Standard/none scoring: unlimited recycles. Vegas: draw-1 → 1 pass total, draw-3 → 3 passes total.
-- **Undo/redo:** history is a stack of applied moves with enough info to invert (including flips and score delta). Unlimited, no penalty; undo reverts score. Count of undos is tracked for stats.
+- **Undo/redo:** the engine is pure (`applyMove(state, move) → newState`). The game session keeps a stack of state snapshots, one per player turn (a turn = the player's move plus any automatic safe moves it triggered), and persists the game as seed + list of turns (replayed on load). Unlimited, no penalty; undo reverts score. Count of undos is tracked for stats.
 - **Scoring (standard, Windows-style):** waste→tableau +5, waste→foundation +10, tableau→foundation +10, tableau card turned face-up +5, foundation→tableau −15, recycle −100 (draw-1) / −20 (draw-3), floor at 0. **Vegas:** −$52 per deal, +$5 per card to foundation; optional cumulative Vegas bank across games (setting).
 - **Move generation:** `legalMoves(state)` returns all legal moves; `destinationsFor(state, source)` returns legal destinations for a picked-up card/run in priority order (below).
 - **Safe auto-foundation:** a card is "safe" to auto-play when its rank ≤ 2, or both opposite-colour foundations are at ≥ rank − 1. Used by the auto-play setting and by the solver.
 - **Win:** all four foundations complete.
-- **Auto-finish trigger:** every tableau card is face up (stock/waste may still hold cards). `autoFinish(state)` returns the move sequence that completes the game. It tries a greedy pass first (play the lowest available card to its foundation, else draw/recycle) and falls back to the solver, which is near-instant here because nothing is hidden. Not every all-face-up position is winnable (draw-3 can bury a needed card in the stock; Vegas can run out of passes), so if neither finds a finish, auto-finish doesn't fire and play continues manually; it re-checks after each subsequent move.
+- **Auto-finish trigger:** every tableau card is face up (stock/waste may still hold cards). `autoFinish(state)` (in `src/solver/`, since it may call the solver) returns the move sequence that completes the game. It tries a greedy pass first (play the lowest available card to its foundation, else draw/recycle) and falls back to the solver, which is near-instant here because nothing is hidden. Not every all-face-up position is winnable (draw-3 can bury a needed card in the stock; Vegas can run out of passes), so if neither finds a finish, auto-finish doesn't fire and play continues manually; it re-checks after each subsequent move.
 
 ## Solver
 
@@ -50,7 +50,7 @@ One TypeScript implementation, used at build time (Node) and at runtime (Web Wor
 
 - **Search:** iterative DFS with a transposition table keyed by a canonical state hash (tableau columns sorted by content so symmetric positions collapse; stock/waste encoded as position in the stock cycle).
 - **Move compression and pruning:**
-  - Safe foundation moves are applied automatically and not branched on.
+  - Safe foundation moves are applied automatically and not branched on (from the waste only in draw-1, where removing a waste card can't change which stock cards are reachable).
   - Stock handled as compound moves ("draw k times, then play the resulting waste card"), avoiding branching on bare draws.
   - Tableau→tableau run moves only when they expose a face-down card, empty a column that a King can use, or enable a foundation move; never move a King-led run from an empty-bottomed column to another empty column.
   - Move ordering: foundation > reveals face-down card > waste plays > other.
@@ -59,9 +59,9 @@ One TypeScript implementation, used at build time (Node) and at runtime (Web Wor
 
 ## Deal bank
 
-- `scripts/build-deals.ts` iterates seeds across all CPU cores, solves each with a generous budget (~seconds), and keeps only `winnable` seeds. Output: `src/deals/bank-draw1.json`, `bank-draw3.json` — arrays of `{ seed, solutionLength }`.
+- `scripts/build-deals.ts` iterates seeds across all CPU cores, solves each with a generous budget (~seconds), and keeps only `winnable` seeds. Output: `src/deals/bank-draw1.json`, `bank-draw3.json` — `{ version, drawCount, maxNodes, entries: [seed, solutionLength][] }`.
 - Target: **2,000 seeds per draw mode** at launch (far more than any player will exhaust; repeats are avoided by tracking recently played seeds). Difficulty is recorded (solution length) for future use; not exposed in v1.
-- **Test:** every banked seed's solution replays through the engine to a win (a sampled subset in the fast test run; the full set in a `test:deals` script).
+- **Test:** the solver is deterministic, so banked seeds are re-solved with the bank's node budget and each solution replays through the engine to a win (a sampled subset in the fast test run; the full set in `npm run test:deals`). Solutions are not stored.
 - The bank is committed to the repo; the build script is rerun only when the engine or solver changes.
 
 ## Game modes & deals
@@ -93,10 +93,10 @@ One TypeScript implementation, used at build time (Node) and at runtime (Web Wor
 - **Auto-finish:** as soon as the last face-down tableau card is turned up and `autoFinish` finds a finish, input locks and the remaining cards fly to the foundations automatically (≈ 80 ms stagger; instant with animations off), then the win sequence plays. Undo after the win is not offered.
 - **Win:** classic bouncing-card cascade drawn on a canvas that is never cleared; tap to skip. Then a result card: time, moves, score, win streak, New game / Replay.
 - **Themes (CSS custom properties + card renderer):**
-  - **Classic Felt:** green felt, traditional faces using Adrian Kennard's SVG playing cards (CC0), vendored and pruned to the 52 faces + back.
+  - **Classic Felt:** green felt, traditional faces using Adrian Kennard's SVG playing cards (CC0), vendored by `scripts/vendor-cards.ts` from his generator into `public/cards/classic/` (and `classic-4c/` for the four-colour deck), 52 faces + back.
   - **Modern Minimal (light & dark):** flat table, cards drawn by our own SVG renderer with large corner indices and a large centre suit; court cards show large rank letter + suit. Dark follows `prefers-color-scheme` by default.
   - Four-colour deck (♠ black, ♥ red, ♦ blue, ♣ green) applies to either theme.
-- **Sound:** short flip/place/shuffle/win samples via Web Audio, preloaded; mute toggle.
+- **Sound:** short flip/place/shuffle/win sounds synthesized with Web Audio (no audio files); mute toggle.
 - **Accessibility:** each card has an accessible name ("7 of hearts, face up" / "face-down card"); piles are labelled regions; an `aria-live="polite"` region announces moves, hints, and results. Visible focus ring. Respects `prefers-reduced-motion`. Minimum 44 px tap targets on the exposed part of every playable card.
 
 ## Persistence (localStorage, versioned, validated on read)
