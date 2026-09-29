@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { hasProductiveMove, heuristicHint } from '../engine/analysis';
 import type { GameState, Move } from '../engine/types';
 import { SolverClient } from '../solver/client';
+import type { SolveResult } from '../solver/solve';
 import type { Hint } from './types';
 import type { Game } from './useGame';
 
@@ -14,6 +15,10 @@ export const toHint = (m: Move): Hint =>
 /** Identifies the board apart from stock/waste, so cycling the stock doesn't look like a new position. */
 export const boardKey = (s: GameState) =>
   JSON.stringify([s.foundations.map((f) => f.length), s.tableau.map((c) => [c.cards, c.faceUpFrom])]);
+
+/** What to tell the player when the automatic check finds no productive move: nothing if the solver can still win. */
+export const stuckFor = (r: SolveResult): Stuck =>
+  r.status === 'winnable' ? null : r.status === 'unwinnable' ? 'unwinnable' : 'no-moves';
 
 const cancelled = (e: unknown) => e instanceof Error && e.message === 'cancelled';
 
@@ -38,13 +43,24 @@ export function useSolver(game: Game, notify: (msg: string) => void) {
     client.cancel();
   }, [state, client]);
 
-  // After a turn, notice when nothing useful is left.
+  // After a turn, notice when nothing useful is left. Having no productive move doesn't mean the deal is lost
+  // (the stock may still be worth cycling), so ask the solver before telling the player.
   useEffect(() => {
     if (dismissedKey.current !== null && dismissedKey.current !== boardKey(state)) dismissedKey.current = null;
-    if (status === 'playing' && session.turns.length > 0 && dismissedKey.current === null && !hasProductiveMove(state)) {
-      setStuck('no-moves');
-    }
-  }, [state, status, session.turns.length]);
+    if (status !== 'playing' || session.turns.length === 0 || dismissedKey.current !== null || hasProductiveMove(state)) return;
+    let live = true;
+    client
+      .solve(state, 1500)
+      .then((r) => {
+        if (live && stateRef.current === state) setStuck(stuckFor(r));
+      })
+      .catch((e) => {
+        if (live && !cancelled(e) && stateRef.current === state) setStuck('no-moves');
+      });
+    return () => {
+      live = false;
+    };
+  }, [state, status, session.turns.length, client]);
 
   const closeStuck = useCallback(() => {
     dismissedKey.current = boardKey(stateRef.current);

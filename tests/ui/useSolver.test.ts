@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { deal } from '../../src/engine/deal';
 import { applyMove } from '../../src/engine/apply';
-import { boardKey, toHint } from '../../src/ui/useSolver';
+import { boardKey, stuckFor, toHint } from '../../src/ui/useSolver';
 
 describe('toHint', () => {
   it('maps card moves to a move hint and stock moves to the stock', () => {
@@ -19,5 +19,13 @@ describe('boardKey', () => {
     expect(boardKey(drawn)).toBe(boardKey(s));
     const other = deal(4, 3, 'standard');
     expect(boardKey(other)).not.toBe(boardKey(s));
+  });
+});
+
+describe('stuckFor', () => {
+  it('stays silent when the solver can still win, and picks the right prompt otherwise', () => {
+    expect(stuckFor({ status: 'winnable', solution: [], nodes: 1 })).toBeNull();
+    expect(stuckFor({ status: 'unwinnable', nodes: 1 })).toBe('unwinnable');
+    expect(stuckFor({ status: 'unknown', nodes: 1 })).toBe('no-moves');
   });
 });
