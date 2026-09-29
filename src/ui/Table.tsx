@@ -5,7 +5,7 @@ import type { GameState, Move } from '../engine/types';
 import type { Settings } from '../store/settings';
 import { Card } from './Card';
 import { pileCards } from './focus';
-import { SUIT_PATHS } from './cards/minimal';
+import { SUIT_PATHS } from './cards/suits';
 import { cardPositions, computeLayout, pickupIds, pileRect, slotRect, type CardPos, type Layout, type PileKey } from './layout';
 import type { Focus, Hint, Selection } from './types';
 import { useSize } from './useSize';
@@ -162,8 +162,6 @@ export function Table(p: TableProps) {
             pos={positions.get(id)!}
             width={layout.cardW}
             height={layout.cardH}
-            theme={p.settings.theme}
-            fourColor={p.settings.fourColor}
             moving={moving.has(id)}
             hinted={hinted.has(id)}
             focused={activeId === `card-${id}`}
@@ -178,7 +176,7 @@ export function Table(p: TableProps) {
         />
       )}
       {layout && p.celebrate && (
-        <WinCascade layout={layout} theme={p.settings.theme} fourColor={p.settings.fourColor} onDone={() => p.onCelebrated?.()} />
+        <WinCascade layout={layout} onDone={() => p.onCelebrated?.()} />
       )}
     </div>
   );

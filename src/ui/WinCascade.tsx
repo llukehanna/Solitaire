@@ -1,14 +1,10 @@
 import { useEffect, useRef } from 'react';
 import type { CardId } from '../engine/cards';
-import type { Theme } from '../store/settings';
-import { classicCardUrl } from './CardFront';
-import { minimalCardSvg, type Palette } from './cards/minimal';
+import { paintFace, type FacePalette } from './cards/paint';
 import type { Layout } from './layout';
 
 interface Props {
   layout: Layout;
-  theme: Theme;
-  fourColor: boolean;
   onDone(): void;
 }
 
@@ -21,7 +17,7 @@ interface Particle {
 }
 
 /** The classic bouncing-card cascade: cards leave the foundations K→A and trail across a canvas that is never cleared. */
-export function WinCascade({ layout, theme, fourColor, onDone }: Props) {
+export function WinCascade({ layout, onDone }: Props) {
   const ref = useRef<HTMLCanvasElement>(null);
   const done = useRef(onDone);
   done.current = onDone;
@@ -42,15 +38,18 @@ export function WinCascade({ layout, theme, fourColor, onDone }: Props) {
 
     const css = getComputedStyle(canvas);
     const v = (name: string) => css.getPropertyValue(name).trim() || '#000';
-    const pal: Palette = { S: v('--suit-S'), H: v('--suit-H'), D: v('--suit-D'), C: v('--suit-C'), face: v('--card-face'), edge: v('--card-edge') };
-    const images = new Map<CardId, HTMLImageElement>();
+    const pal: FacePalette = { S: v('--suit-S'), H: v('--suit-H'), D: v('--suit-D'), C: v('--suit-C'), face: v('--card-face'), font: v('--font-ui') || 'sans-serif' };
+    const images = new Map<CardId, HTMLCanvasElement>();
     for (let id = 0; id < 52; id++) {
-      const img = new Image();
-      img.src =
-        theme === 'classic'
-          ? classicCardUrl(id, fourColor)
-          : `data:image/svg+xml;charset=utf-8,${encodeURIComponent(minimalCardSvg(id, pal))}`;
-      images.set(id, img);
+      const c = document.createElement('canvas');
+      c.width = Math.round(layout.cardW * dpr);
+      c.height = Math.round(layout.cardH * dpr);
+      const cc = c.getContext('2d');
+      if (cc) {
+        cc.scale(dpr, dpr);
+        paintFace(cc, id, layout.cardW, layout.cardH, pal);
+      }
+      images.set(id, c);
     }
 
     const queue: { id: CardId; x: number; y: number }[] = [];
@@ -77,7 +76,7 @@ export function WinCascade({ layout, theme, fourColor, onDone }: Props) {
             p.vy *= -0.8;
           }
           const img = images.get(p.id)!;
-          if (img.complete && img.naturalWidth) ctx.drawImage(img, p.x, p.y, layout.cardW, layout.cardH);
+          ctx.drawImage(img, p.x, p.y, layout.cardW, layout.cardH);
         }
         if (p.x > w || p.x + layout.cardW < 0) live.splice(i, 1);
       }
@@ -101,7 +100,7 @@ export function WinCascade({ layout, theme, fourColor, onDone }: Props) {
       cancelAnimationFrame(raf);
       window.removeEventListener('keydown', onKey);
     };
-  }, [layout, theme, fourColor]);
+  }, [layout]);
 
   return <canvas ref={ref} className="win-cascade" aria-hidden="true" onPointerDown={() => done.current()} />;
 }
