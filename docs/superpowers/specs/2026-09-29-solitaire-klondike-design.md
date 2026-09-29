@@ -97,7 +97,7 @@ One TypeScript implementation, used at build time (Node) and at runtime (Web Wor
   - **Modern Minimal (light & dark):** flat table, cards drawn by our own SVG renderer with large corner indices and a large centre suit; court cards show large rank letter + suit. Dark follows `prefers-color-scheme` by default.
   - Four-colour deck (♠ black, ♥ red, ♦ blue, ♣ green) applies to either theme.
 - **Sound:** short flip/place/shuffle/win sounds synthesized with Web Audio (no audio files); mute toggle.
-- **Accessibility:** each card has an accessible name ("7 of hearts, face up" / "face-down card"); piles are labelled regions; an `aria-live="polite"` region announces moves, hints, and results. Visible focus ring. Respects `prefers-reduced-motion`. Minimum 44 px tap targets on the exposed part of every playable card.
+- **Accessibility:** each card has an accessible name ("7 of hearts, face up" / "face-down card"); piles are labelled regions; an `aria-live="polite"` region announces moves, hints, and results. Visible focus ring. Respects `prefers-reduced-motion`. The whole visible part of every playable card is a tap target (on phones, seven columns make fanned slivers smaller than 44 px; drag and keyboard remain available).
 
 ## Persistence (localStorage, versioned, validated on read)
 
