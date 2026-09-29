@@ -12,8 +12,11 @@ export interface ModeStats {
   imported?: { source: 'solitaired'; at: number };
 }
 
+// The stored version stays 1 on purpose: the `imported` marker is optional and v1 code passes unknown fields
+// through, so a rollback to an older build must not wipe stats. We still accept v:2 on read, because an earlier
+// v1.1 build wrote it.
 export interface Stats {
-  v: 2;
+  v: 1;
   draw1: ModeStats;
   draw3: ModeStats;
   vegasBank: number;
@@ -38,7 +41,7 @@ export const emptyModeStats = (): ModeStats => ({
   bestScore: null,
 });
 
-export const emptyStats = (): Stats => ({ v: 2, draw1: emptyModeStats(), draw3: emptyModeStats(), vegasBank: 0 });
+export const emptyStats = (): Stats => ({ v: 1, draw1: emptyModeStats(), draw3: emptyModeStats(), vegasBank: 0 });
 
 const lower = (a: number | null, b: number) => (a === null ? b : Math.min(a, b));
 
@@ -89,7 +92,7 @@ export function parseStats(raw: unknown): Stats {
   const draw1 = parseMode(r.draw1);
   const draw3 = parseMode(r.draw3);
   if ((r.v !== 1 && r.v !== 2) || !draw1 || !draw3 || typeof r.vegasBank !== 'number' || !Number.isFinite(r.vegasBank)) return emptyStats();
-  return { v: 2, draw1, draw3, vegasBank: r.vegasBank };
+  return { v: 1, draw1, draw3, vegasBank: r.vegasBank };
 }
 
 export interface ImportInput {
@@ -128,7 +131,12 @@ export interface ImportFields {
   moves: string;
 }
 
-const int = (v: string) => (/^\d+$/.test(v.trim()) ? Number(v.trim()) : null);
+const int = (v: string) => {
+  const t = v.trim();
+  if (!/^\d+$/.test(t)) return null;
+  const n = Number(t);
+  return Number.isSafeInteger(n) ? n : null;
+};
 
 export function parseImportForm(f: ImportFields): { ok: true; value: ImportInput } | { ok: false; error: string } {
   const played = int(f.played);
@@ -140,9 +148,11 @@ export function parseImportForm(f: ImportFields): { ok: true; value: ImportInput
     const t = /^(\d+):([0-5]\d)$/.exec(f.time.trim());
     if (!t) return { ok: false, error: 'Fastest win must look like 0:34.' };
     timeMs = (Number(t[1]) * 60 + Number(t[2])) * 1000;
+    if (!Number.isSafeInteger(timeMs) || timeMs === 0) return { ok: false, error: 'Fastest win must be longer than 0:00.' };
   }
   const moves = f.moves.trim() ? int(f.moves) : null;
   if (f.moves.trim() && moves === null) return { ok: false, error: 'Fewest moves must be a whole number.' };
+  if (moves === 0) return { ok: false, error: 'Fewest moves must be at least 1.' };
   return { ok: true, value: { played, won, timeMs, moves } };
 }
 

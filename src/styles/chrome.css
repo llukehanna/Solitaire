@@ -80,6 +80,10 @@
 .modal-card { border-radius: 16px; padding: 22px; max-height: calc(100dvh - 48px); overflow: auto; }
 .modal[open] .modal-card { animation: sheet-in 220ms var(--ease); }
 @keyframes sheet-in { from { opacity: 0; transform: translateY(8px); } }
+@keyframes sheet-fade { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .modal[open] .modal-card { animation: sheet-fade 160ms ease-out; }
+}
 .modal h2 { margin: 0 0 14px; font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
 .modal-body { display: flex; flex-direction: column; gap: 16px; }
 .modal-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-top: 20px; }
@@ -143,9 +147,13 @@
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-@media (max-width: 640px) {
+/* Tablets and small windows: icons only, so the bar stays one row down to 641px. */
+@media (max-width: 1100px) {
   .wordmark, .tb-label { display: none; }
   .tb-btn { padding: 8px; }
+}
+
+@media (max-width: 640px) {
   .readout { order: 10; width: 100%; justify-content: center; margin: 2px 0 0; padding-top: 6px; border-top: 1px solid var(--chrome-line); }
 }
 
