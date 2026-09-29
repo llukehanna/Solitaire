@@ -72,6 +72,14 @@ export function Table(p: TableProps) {
   );
   const positions = useMemo(() => (layout ? cardPositions(p.state, layout) : null), [p.state, layout]);
   const cardEls = useRef(new Map<CardId, HTMLDivElement>());
+  // One stable ref callback per card, so memo(Card) isn't defeated by a fresh inline function on every render.
+  const cardRefs = useRef<((el: HTMLDivElement | null) => void)[]>([]);
+  if (cardRefs.current.length === 0) {
+    cardRefs.current = Array.from({ length: 52 }, (_, id) => (el) => {
+      if (el) cardEls.current.set(id, el);
+      else cardEls.current.delete(id);
+    });
+  }
   const moving = useMovingCards(positions);
   const input = useTableInput({
     state: p.state,
@@ -149,10 +157,7 @@ export function Table(p: TableProps) {
         Array.from({ length: 52 }, (_, id) => (
           <Card
             key={id}
-            ref={(el) => {
-              if (el) cardEls.current.set(id, el);
-              else cardEls.current.delete(id);
-            }}
+            ref={cardRefs.current[id]}
             id={id}
             pos={positions.get(id)!}
             width={layout.cardW}

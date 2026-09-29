@@ -33,8 +33,6 @@ export interface Game {
   switchDraw(d: DrawCount): void;
   /** Returns true when the change only applies from the next game. */
   updateSettings(patch: Partial<Settings>): boolean;
-  pauseTimer(): void;
-  resumeTimer(): void;
   /** Hold the timer paused (e.g. while a dialog is open); visibility changes will not resume it while held. */
   holdTimer(held: boolean): void;
 }
@@ -179,8 +177,6 @@ export function useGame(): Game {
     restart,
     switchDraw,
     updateSettings,
-    pauseTimer: useCallback(() => dispatch({ type: 'pause', now: Date.now() }), []),
-    resumeTimer: useCallback(() => dispatch({ type: 'resume', now: Date.now() }), []),
     holdTimer: useCallback((held: boolean) => {
       heldRef.current = held;
       if (held) dispatch({ type: 'pause', now: Date.now() });
