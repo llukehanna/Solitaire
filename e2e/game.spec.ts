@@ -204,6 +204,11 @@ test('Space draws from the stock, even right after clicking a toolbar button', a
   await expect.poll(() => pileCount(page, 'W')).toBe(0);
   await page.keyboard.press(' ');
   await expect.poll(() => pileCount(page, 'W')).toBe(1); // drew again, did not re-press Undo
+  // Also test that Space works after clicking a table swatch
+  await page.getByRole('radio', { name: 'Felt table' }).click();
+  await expect.poll(() => pileCount(page, 'W')).toBe(1);
+  await page.keyboard.press(' ');
+  await expect.poll(() => pileCount(page, 'W')).toBe(2); // drew again after swatch click
 });
 
 test('layout fits the viewport without scrolling', async ({ page }) => {
