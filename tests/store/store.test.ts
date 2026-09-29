@@ -23,12 +23,31 @@ describe('storage', () => {
 describe('settings', () => {
   it('defaults garbage and keeps valid fields', () => {
     expect(parseSettings('nope')).toEqual(DEFAULT_SETTINGS);
-    expect(parseSettings({ drawCount: 3, scoring: 'bogus', sound: false, theme: 'minimal' })).toEqual({
+    expect(parseSettings({ drawCount: 3, scoring: 'bogus', sound: false, table: 'felt', cardBack: 'navy' })).toEqual({
       ...DEFAULT_SETTINGS,
       drawCount: 3,
       sound: false,
-      theme: 'minimal',
+      table: 'felt',
+      cardBack: 'navy',
     });
+    expect(DEFAULT_SETTINGS.table).toBe('studio');
+    expect(DEFAULT_SETTINGS.cardBack).toBe('amber');
+  });
+  it.each([
+    [{ theme: 'classic' }, false, 'felt'],
+    [{ theme: 'minimal', colorMode: 'light' }, false, 'paper'],
+    [{ theme: 'minimal', colorMode: 'dark' }, true, 'studio'],
+    [{ theme: 'minimal', colorMode: 'auto' }, true, 'paper'],
+    [{ theme: 'minimal', colorMode: 'auto' }, false, 'studio'],
+    [{}, true, 'studio'],
+  ])('migrates v1 %o (prefers light: %s) to the %s table', (raw, light, table) => {
+    expect(parseSettings(raw, light).table).toBe(table);
+    expect(parseSettings(raw, light)).not.toHaveProperty('theme');
+  });
+  it('saves the migrated settings once on load', () => {
+    writeJSON(KEYS.settings, { theme: 'classic', sound: false });
+    expect(loadSettings().table).toBe('felt');
+    expect(readJSON(KEYS.settings)).toMatchObject({ table: 'felt', sound: false });
   });
   it('round-trips through storage', () => {
     saveSettings({ ...DEFAULT_SETTINGS, leftHanded: true });
