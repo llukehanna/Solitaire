@@ -80,6 +80,8 @@ function commit(s: Session, moves: Move[], now: number): Session {
       return {
         ...played,
         status: 'finishing',
+        // The animation isn't play time: stop the clock so the result matches the time recorded on entry.
+        timer: pauseTimer(played.timer, now),
         finishQueue: finish,
         history: [...played.history, next],
         turns: [...played.turns, finish],

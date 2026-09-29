@@ -72,8 +72,12 @@ describe('session', () => {
         stock: cards('KH 5H'),
       }),
     );
-    let r = turn(s, [{ type: 'move', from: 'T0', to: 'F2', count: 1 }]);
+    const started = { ...s, timer: { accumulatedMs: 0, runningSince: 0 } };
+    let r = turn(started, [{ type: 'move', from: 'T0', to: 'F2', count: 1 }], false, 7000);
     expect(r.status).toBe('finishing');
+    expect(r.timer.runningSince).toBeNull(); // clock stops when the auto-finish begins
+    const atFinish = elapsed(r.timer, 60_000);
+    expect(atFinish).toBe(7000);
     expect(r.turns).toHaveLength(2);
     expect(r.finishQueue.length).toBeGreaterThan(0);
     expect(turn(r, [draw])).toBe(r); // input locked while finishing
@@ -83,6 +87,7 @@ describe('session', () => {
       steps++;
     }
     expect(r.status).toBe('won');
+    expect(elapsed(r.timer, 60_000)).toBe(atFinish); // animating the finish adds no time
     expect(isWon(r.state)).toBe(true);
     expect(isWon(applyMoves(s.state, r.turns.flat()))).toBe(true);
   });
