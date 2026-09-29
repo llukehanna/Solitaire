@@ -4,6 +4,7 @@ import { allFaceUp, applySafeMoves, isWon } from '../engine/movegen';
 import { canMove } from '../engine/rules';
 import type { DrawCount, GameState, Move, Scoring } from '../engine/types';
 import { autoFinish } from '../solver/autoFinish';
+import { heldBackCards } from './heldBack';
 import { newTimer, pauseTimer, startTimer, type Timer } from './timer';
 
 export type Status = 'playing' | 'finishing' | 'won';
@@ -103,7 +104,8 @@ export function sessionReducer(s: Session, a: Action): Session {
       if (s.status !== 'playing' || a.moves.length === 0) return s;
       const played = tryApply(s.state, a.moves);
       if (!played) return s;
-      const auto = a.autoPlay ? applySafeMoves(played).moves : [];
+      const hold = a.autoPlay ? heldBackCards(s.history[0] ?? s.state, [...s.turns, a.moves]) : undefined;
+      const auto = a.autoPlay ? applySafeMoves(played, true, hold).moves : [];
       const r = commit(s, [...a.moves, ...auto], a.now);
       return r === s ? s : { ...r, redo: [] };
     }
