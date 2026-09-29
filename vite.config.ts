@@ -27,6 +27,10 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,json,webmanifest,woff2}'],
         maximumFileSizeToCacheInBytes: 3_000_000,
+        // Activate a new deploy's worker on install. Otherwise it waits for a SKIP_WAITING message that pages
+        // running an older client never send, and returning players stay on the old version until every tab closes.
+        skipWaiting: true,
+        clientsClaim: true,
       },
     }),
   ],
