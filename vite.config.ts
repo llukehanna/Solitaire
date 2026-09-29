@@ -7,6 +7,8 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Registration comes from `virtual:pwa-register` in src/main.tsx, which also reloads open tabs onto a new version.
+      injectRegister: false,
       manifest: {
         name: 'Solitaire',
         short_name: 'Solitaire',
