@@ -21,7 +21,8 @@ export function Readout({ session, settings, vegasBank }: { session: Session; se
         Moves <b>{session.state.moves}</b>
       </span>
       <span>
-        <b data-testid="timer" aria-label="Time">{formatTime(elapsed(session.timer, now))}</b>
+        <span className="sr-only">Time </span>
+        <b data-testid="timer">{formatTime(elapsed(session.timer, now))}</b>
       </span>
       <span className="pill">Draw {session.drawCount}</span>
     </div>

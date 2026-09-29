@@ -31,24 +31,52 @@ const PILE_LABELS: Record<string, string> = { S: 'Stock', W: 'Waste' };
 const pileLabel = (k: PileKey) =>
   PILE_LABELS[k] ?? (k[0] === 'F' ? `Foundation ${Number(k.slice(1)) + 1}` : `Column ${Number(k.slice(1)) + 1}`);
 
-/** Cards whose pile changed in the last render get a z-index boost while they animate. */
+/** How long a card that changed pile keeps its z-index boost; comfortably above the move animation. */
+const MOVING_MS = 450;
+
+/**
+ * Cards whose pile changed get a z-index boost while they animate. Boosts accumulate (id -> expiry), so a card
+ * still in flight keeps its boost when a later step, such as the next auto-finish move, changes other cards.
+ */
 function useMovingCards(positions: Map<CardId, CardPos> | null): Set<CardId> {
   const prev = useRef<Map<CardId, CardPos> | null>(null);
+  const expiries = useRef(new Map<CardId, number>());
   const timer = useRef<number | undefined>(undefined);
   const [moving, setMoving] = useState<Set<CardId>>(() => new Set());
+
+  const sync = () => {
+    const now = performance.now();
+    let earliest = Infinity;
+    const live = new Set<CardId>();
+    for (const [id, at] of expiries.current) {
+      if (at <= now) expiries.current.delete(id);
+      else {
+        live.add(id);
+        earliest = Math.min(earliest, at);
+      }
+    }
+    setMoving((old) => (old.size === live.size && [...live].every((id) => old.has(id)) ? old : live));
+    window.clearTimeout(timer.current);
+    if (earliest !== Infinity) timer.current = window.setTimeout(sync, Math.max(0, earliest - now) + 1);
+  };
+
   useLayoutEffect(() => {
     if (!positions) return;
-    const changed = new Set<CardId>();
+    let changed = false;
     if (prev.current) {
-      for (const [id, pos] of positions) if (prev.current.get(id)?.pile !== pos.pile) changed.add(id);
+      const at = performance.now() + MOVING_MS;
+      for (const [id, pos] of positions) {
+        if (prev.current.get(id)?.pile !== pos.pile) {
+          expiries.current.set(id, at);
+          changed = true;
+        }
+      }
     }
     prev.current = positions;
-    if (changed.size) {
-      setMoving(changed);
-      window.clearTimeout(timer.current);
-      timer.current = window.setTimeout(() => setMoving(new Set()), 450);
-    }
+    if (changed) sync();
   }, [positions]);
+
+  useEffect(() => () => window.clearTimeout(timer.current), []);
   return moving;
 }
 

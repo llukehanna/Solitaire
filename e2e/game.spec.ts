@@ -275,3 +275,15 @@ test('imports solitaired stats once', async ({ page }) => {
   await expect(dialog.getByText(/Imported from solitaired\.com on/)).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Import from solitaired.com' })).toHaveCount(0);
 });
+
+for (const [width, height] of [[641, 900], [820, 1180], [1024, 768]] as const) {
+  for (const scoring of ['standard', 'vegas'] as const) {
+    test(`the toolbar stays one row at ${width}x${height} with ${scoring} scoring`, async ({ page }, info) => {
+      test.skip(info.project.name !== 'desktop', 'sets its own viewport; the mobile project would only re-test the same sizes');
+      await page.setViewportSize({ width, height });
+      await freshGame(page, { seed: SEED, settings: { scoring } });
+      const box = (await page.locator('.toolbar').boundingBox())!;
+      expect(box.height).toBeLessThanOrEqual(56);
+    });
+  }
+}

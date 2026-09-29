@@ -96,16 +96,21 @@ describe('stats import', () => {
     expect(r.draw3).toEqual(s.draw3);
     expect(importStats(r, SOLITAIRED_PREFILL, 456)).toBe(r); // once only
   });
-  it('keeps the marker through later results and round-trips v2', () => {
+  it('keeps the marker through later results and round-trips', () => {
     const r = recordResult(importStats(emptyStats(), SOLITAIRED_PREFILL, 1), { drawCount: 1, scoring: 'standard', won: true, timeMs: 1, moves: 1, score: 1 });
     expect(r.draw1.imported).toEqual({ source: 'solitaired', at: 1 });
     expect(parseStats(JSON.parse(JSON.stringify(r)))).toEqual(r);
   });
-  it('upgrades v1 stats to v2 without a marker', () => {
-    const v1 = { ...emptyStats(), v: 1 };
+  it('v:1 without a marker parses with no marker; a stored v:2 record (earlier v1.1 build) is accepted and normalised to v:1', () => {
+    const v1 = emptyStats();
+    expect(v1.v).toBe(1);
     const p = parseStats(v1);
-    expect(p.v).toBe(2);
+    expect(p.v).toBe(1);
     expect(p.draw1.imported).toBeUndefined();
+    const p2 = parseStats({ ...v1, v: 2, draw1: { ...v1.draw1, played: 3, imported: { source: 'solitaired', at: 9 } } });
+    expect(p2.v).toBe(1);
+    expect(p2.draw1).toMatchObject({ played: 3, imported: { source: 'solitaired', at: 9 } });
+    expect(parseStats({ ...v1, v: 3 })).toEqual(emptyStats());
   });
   it('validates the form', () => {
     expect(parseImportForm({ played: '5561', won: '4089', time: '0:34', moves: '102' })).toEqual({ ok: true, value: SOLITAIRED_PREFILL });
@@ -113,6 +118,20 @@ describe('stats import', () => {
     expect(parseImportForm({ played: '3', won: '4', time: '', moves: '' }).ok).toBe(false);
     expect(parseImportForm({ played: '-1', won: '0', time: '', moves: '' }).ok).toBe(false);
     expect(parseImportForm({ played: '5', won: '1', time: '1:75', moves: '' }).ok).toBe(false);
+  });
+  it('rejects unsafe integers, a 0:00 fastest time and zero fewest moves', () => {
+    const big = '9'.repeat(400);
+    expect(parseImportForm({ played: big, won: '1', time: '', moves: '' }).ok).toBe(false);
+    expect(parseImportForm({ played: '5', won: big, time: '', moves: '' }).ok).toBe(false);
+    expect(parseImportForm({ played: '5', won: '1', time: '', moves: big }).ok).toBe(false);
+    expect(parseImportForm({ played: '9007199254740993', won: '1', time: '', moves: '' }).ok).toBe(false);
+    const t0 = parseImportForm({ played: '5', won: '1', time: '0:00', moves: '' });
+    expect(t0.ok).toBe(false);
+    if (!t0.ok) expect(t0.error).toMatch(/fastest/i);
+    const m0 = parseImportForm({ played: '5', won: '1', time: '', moves: '0' });
+    expect(m0.ok).toBe(false);
+    if (!m0.ok) expect(m0.error).toMatch(/moves/i);
+    expect(parseImportForm({ played: '5', won: '1', time: '0:01', moves: '1' }).ok).toBe(true);
   });
 });
 

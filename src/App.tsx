@@ -27,6 +27,7 @@ export default function App() {
   const solver = useSolver(game, showToast);
   const [celebrate, setCelebrate] = useState(false);
   const celebrateTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(celebrateTimer.current), []);
   const [showResult, setShowResult] = useState(session.status === 'won');
   // n changes on every announcement so identical messages still mutate the live region and are re-read.
   const [announcement, setAnnouncementState] = useState({ text: '', n: 0 });

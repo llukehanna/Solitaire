@@ -149,7 +149,9 @@ export function useTableInput(args: Args) {
       return;
     }
     if (!p.pickup || p.cardId === null) return;
-    const now = performance.now();
+    // Event timestamps, not performance.now(): a busy main thread delays when we *process* the second tap of a
+    // double-click, but not when it happened. Both taps are measured on the same (event) clock.
+    const now = e.timeStamp;
     // The first tap of a double-click may have moved the card away, so the second one lands on whatever is
     // underneath. Ignore any tap that follows quickly at (nearly) the same spot, whatever card it hits.
     const prev = lastTap.current;
