@@ -9,6 +9,7 @@ import { cardPositions, computeLayout, pickupIds, pileRect, slotRect, type CardP
 import type { Focus, Hint, Selection } from './types';
 import { useSize } from './useSize';
 import { useTableInput } from './useTableInput';
+import { WinCascade } from './WinCascade';
 
 interface TableProps {
   state: GameState;
@@ -20,6 +21,8 @@ interface TableProps {
   onTurn(moves: Move[]): void;
   onStockTap(): void;
   onReject?(): void;
+  celebrate?: boolean;
+  onCelebrated?(): void;
 }
 
 const PILES: PileKey[] = ['S', 'W', 'F0', 'F1', 'F2', 'F3', 'T0', 'T1', 'T2', 'T3', 'T4', 'T5', 'T6'];
@@ -161,6 +164,9 @@ export function Table(p: TableProps) {
           aria-hidden="true"
           style={{ transform: `translate(${hintTarget.x}px, ${hintTarget.y}px)`, width: hintTarget.w, height: hintTarget.h }}
         />
+      )}
+      {layout && p.celebrate && (
+        <WinCascade layout={layout} theme={p.settings.theme} fourColor={p.settings.fourColor} onDone={() => p.onCelebrated?.()} />
       )}
     </div>
   );
