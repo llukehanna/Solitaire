@@ -9,9 +9,7 @@ import { elapsed } from '../game/timer';
 import { loadRecent, pushRecent } from '../store/recent';
 import { loadSettings, saveSettings, type Settings } from '../store/settings';
 import { loadStats, recordResult, saveStats, type Stats } from '../store/stats';
-import { effectiveAnimation } from './appClass';
-
-const FINISH_STEP_MS = { normal: 80, fast: 40, off: 0 } as const;
+import { FINISH_STEP_MS, effectiveAnimation } from './appClass';
 
 function freshSession(settings: Settings): Session {
   const seed = pickSeed(settings.drawCount, loadRecent(settings.drawCount));

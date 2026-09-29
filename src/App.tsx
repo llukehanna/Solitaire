@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { TABLE_BASE, appClassName, effectiveAnimation } from './ui/appClass';
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
+import { FLIP_MS, MOVE_MS, TABLE_BASE, appClassName, celebrationAllowed, effectiveAnimation } from './ui/appClass';
 import { describeHint, describeTurn } from './ui/announce';
 import { NoMovesDialog } from './ui/dialogs/NoMovesDialog';
 import { ResultDialog } from './ui/dialogs/ResultDialog';
@@ -26,6 +26,7 @@ export default function App() {
   const [toast, showToast] = useToast();
   const solver = useSolver(game, showToast);
   const [celebrate, setCelebrate] = useState(false);
+  const celebrateTimer = useRef<number | undefined>(undefined);
   const [showResult, setShowResult] = useState(session.status === 'won');
   // n changes on every announcement so identical messages still mutate the live region and are re-read.
   const [announcement, setAnnouncementState] = useState({ text: '', n: 0 });
@@ -65,8 +66,10 @@ export default function App() {
     if (before.status !== 'won' && session.status === 'won') {
       setAnnouncement('You won!');
       if (settings.sound) playSound('win');
-      if (effectiveAnimation(settings) === 'off') setShowResult(true);
-      else setCelebrate(true);
+      // Let the last auto-finish card land before the cascade or result dialog covers the table.
+      const land = MOVE_MS[effectiveAnimation(settings)];
+      window.clearTimeout(celebrateTimer.current);
+      celebrateTimer.current = window.setTimeout(() => (celebrationAllowed(settings) ? setCelebrate(true) : setShowResult(true)), land + 60);
     } else if (before.status === 'playing' && session.status === 'finishing') {
       setAnnouncement('All cards revealed. Finishing automatically.');
     } else if (session.seed !== before.seed || (session.turns.length === 0 && before.turns.length > 0 && session.undos === 0)) {
@@ -77,6 +80,7 @@ export default function App() {
       setAnnouncement('Move undone.');
     }
     if (session.status !== 'won') {
+      window.clearTimeout(celebrateTimer.current);
       setCelebrate(false);
       setShowResult(false);
     }
@@ -99,8 +103,12 @@ export default function App() {
     then?.();
   };
 
+  const anim = effectiveAnimation(settings);
   return (
-    <div className={appClassName(settings)}>
+    <div
+      className={appClassName(settings)}
+      style={{ '--move-ms': `${MOVE_MS[anim]}ms`, '--flip-ms': `${FLIP_MS[anim]}ms` } as CSSProperties}
+    >
       <Toolbar
         canUndo={playing && session.history.length > 0}
         canRedo={playing && session.redo.length > 0}
