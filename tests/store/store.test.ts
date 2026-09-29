@@ -1,0 +1,76 @@
+import { beforeEach, describe, it, expect } from 'vitest';
+import { installLocalStorage, removeLocalStorage } from '../localStorage';
+import { KEYS, readJSON, writeJSON } from '../../src/store/storage';
+import { DEFAULT_SETTINGS, loadSettings, parseSettings, saveSettings } from '../../src/store/settings';
+import { emptyStats, parseStats, recordResult, winRate } from '../../src/store/stats';
+import { RECENT_LIMIT, loadRecent, pushRecent } from '../../src/store/recent';
+
+beforeEach(() => {
+  installLocalStorage();
+});
+
+describe('storage', () => {
+  it('survives missing localStorage and bad JSON', () => {
+    removeLocalStorage();
+    expect(readJSON('x')).toBeNull();
+    expect(() => writeJSON('x', 1)).not.toThrow();
+    const m = installLocalStorage();
+    m.set('x', '{not json');
+    expect(readJSON('x')).toBeNull();
+  });
+});
+
+describe('settings', () => {
+  it('defaults garbage and keeps valid fields', () => {
+    expect(parseSettings('nope')).toEqual(DEFAULT_SETTINGS);
+    expect(parseSettings({ drawCount: 3, scoring: 'bogus', sound: false, theme: 'minimal' })).toEqual({
+      ...DEFAULT_SETTINGS,
+      drawCount: 3,
+      sound: false,
+      theme: 'minimal',
+    });
+  });
+  it('round-trips through storage', () => {
+    saveSettings({ ...DEFAULT_SETTINGS, leftHanded: true });
+    expect(loadSettings().leftHanded).toBe(true);
+  });
+});
+
+describe('stats', () => {
+  it('records wins, losses, streaks and bests per draw mode', () => {
+    let s = emptyStats();
+    s = recordResult(s, { drawCount: 1, scoring: 'standard', won: true, timeMs: 90_000, moves: 120, score: 500 });
+    s = recordResult(s, { drawCount: 1, scoring: 'standard', won: true, timeMs: 80_000, moves: 130, score: 400 });
+    expect(s.draw1).toMatchObject({ played: 2, won: 2, currentStreak: 2, bestStreak: 2, bestTimeMs: 80_000, fewestMoves: 120, bestScore: 500 });
+    s = recordResult(s, { drawCount: 1, scoring: 'standard', won: false, timeMs: 10_000, moves: 5, score: 0 });
+    expect(s.draw1).toMatchObject({ played: 3, won: 2, currentStreak: 0, bestStreak: 2 });
+    expect(winRate(s.draw1)).toBeCloseTo(2 / 3);
+    expect(s.draw3.played).toBe(0);
+  });
+  it('accumulates the Vegas bank', () => {
+    let s = recordResult(emptyStats(), { drawCount: 3, scoring: 'vegas', won: false, timeMs: 1, moves: 1, score: -32 });
+    s = recordResult(s, { drawCount: 3, scoring: 'vegas', won: true, timeMs: 1, moves: 1, score: 208 });
+    expect(s.vegasBank).toBe(176);
+    expect(s.draw3.bestScore).toBeNull();
+  });
+  it('replaces corrupt data with empty stats', () => {
+    expect(parseStats({ v: 1, draw1: { played: 'x' } })).toEqual(emptyStats());
+    expect(parseStats(null)).toEqual(emptyStats());
+  });
+});
+
+describe('recent seeds', () => {
+  it('dedupes and caps per draw mode', () => {
+    for (let i = 0; i < RECENT_LIMIT + 10; i++) pushRecent(1, i);
+    pushRecent(1, 5);
+    const r = loadRecent(1);
+    expect(r).toHaveLength(RECENT_LIMIT);
+    expect(r[r.length - 1]).toBe(5);
+    expect(r.filter((x) => x === 5)).toHaveLength(1);
+    expect(loadRecent(3)).toEqual([]);
+  });
+  it('ignores corrupt data', () => {
+    writeJSON(KEYS.recent, { draw1: ['a', 3] });
+    expect(loadRecent(1)).toEqual([]);
+  });
+});
