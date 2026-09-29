@@ -13,8 +13,8 @@ export default defineConfig({
         name: 'Solitaire',
         short_name: 'Solitaire',
         description: 'Ad-free Klondike solitaire. Every deal is winnable.',
-        theme_color: '#0f5132',
-        background_color: '#0f5132',
+        theme_color: '#131110',
+        background_color: '#131110',
         display: 'standalone',
         start_url: '/',
         icons: [

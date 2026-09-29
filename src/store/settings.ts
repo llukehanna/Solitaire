@@ -1,8 +1,10 @@
 import type { DrawCount, Scoring } from '../engine/types';
 import { KEYS, asRecord, readJSON, writeJSON } from './storage';
 
-export type Theme = 'classic' | 'minimal';
-export type ColorMode = 'auto' | 'light' | 'dark';
+export type TableTheme = 'studio' | 'felt' | 'paper';
+export type CardBack = 'amber' | 'ink' | 'oxblood' | 'navy';
+export const TABLES: readonly TableTheme[] = ['studio', 'felt', 'paper'];
+export const CARD_BACKS: readonly CardBack[] = ['amber', 'ink', 'oxblood', 'navy'];
 export type AnimationSpeed = 'normal' | 'fast' | 'off';
 
 export interface Settings {
@@ -13,8 +15,8 @@ export interface Settings {
   sound: boolean;
   leftHanded: boolean;
   fourColor: boolean;
-  theme: Theme;
-  colorMode: ColorMode;
+  table: TableTheme;
+  cardBack: CardBack;
   animation: AnimationSpeed;
 }
 
@@ -26,8 +28,8 @@ export const DEFAULT_SETTINGS: Settings = {
   sound: true,
   leftHanded: false,
   fourColor: false,
-  theme: 'classic',
-  colorMode: 'auto',
+  table: 'studio',
+  cardBack: 'amber',
   animation: 'normal',
 };
 
@@ -35,7 +37,18 @@ const oneOf = <T>(v: unknown, options: readonly T[], fallback: T): T =>
   (options as readonly unknown[]).includes(v) ? (v as T) : fallback;
 const bool = (v: unknown, fallback: boolean): boolean => (typeof v === 'boolean' ? v : fallback);
 
-export function parseSettings(raw: unknown): Settings {
+/** v1 stored theme + colorMode; map them onto a table (only used when no `table` is stored yet). */
+function migrateTable(r: Record<string, unknown>, prefersLight: boolean): TableTheme {
+  if (r.theme === 'classic') return 'felt';
+  if (r.theme === 'minimal') {
+    if (r.colorMode === 'light') return 'paper';
+    if (r.colorMode === 'dark') return 'studio';
+    return prefersLight ? 'paper' : 'studio';
+  }
+  return DEFAULT_SETTINGS.table;
+}
+
+export function parseSettings(raw: unknown, prefersLight = false): Settings {
   const r = asRecord(raw);
   const d = DEFAULT_SETTINGS;
   return {
@@ -46,11 +59,19 @@ export function parseSettings(raw: unknown): Settings {
     sound: bool(r.sound, d.sound),
     leftHanded: bool(r.leftHanded, d.leftHanded),
     fourColor: bool(r.fourColor, d.fourColor),
-    theme: oneOf(r.theme, ['classic', 'minimal'] as const, d.theme),
-    colorMode: oneOf(r.colorMode, ['auto', 'light', 'dark'] as const, d.colorMode),
+    table: oneOf(r.table, TABLES, migrateTable(r, prefersLight)),
+    cardBack: oneOf(r.cardBack, CARD_BACKS, d.cardBack),
     animation: oneOf(r.animation, ['normal', 'fast', 'off'] as const, d.animation),
   };
 }
 
-export const loadSettings = (): Settings => parseSettings(readJSON(KEYS.settings));
 export const saveSettings = (s: Settings): void => writeJSON(KEYS.settings, s);
+
+const prefersLight = () => typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: light)').matches;
+
+export function loadSettings(): Settings {
+  const raw = readJSON(KEYS.settings);
+  const s = parseSettings(raw, prefersLight());
+  if (raw !== null && asRecord(raw).table === undefined) saveSettings(s); // persist the one-time v1 migration
+  return s;
+}

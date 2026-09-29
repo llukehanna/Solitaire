@@ -62,15 +62,13 @@ export function SettingsDialog({ open, settings: s, deferredNote, onChange, onCl
         checked={s.autoPlay}
         onChange={(autoPlay) => onChange({ autoPlay })}
       />
-      <Segmented label="Theme" value={s.theme} options={[['classic', 'Classic felt'], ['minimal', 'Modern minimal']]} onChange={(theme) => onChange({ theme })} />
-      {s.theme === 'minimal' && (
-        <Segmented
-          label="Appearance"
-          value={s.colorMode}
-          options={[['auto', 'Auto'], ['light', 'Light'], ['dark', 'Dark']]}
-          onChange={(colorMode) => onChange({ colorMode })}
-        />
-      )}
+      <Segmented label="Table" value={s.table} options={[['studio', 'Studio'], ['felt', 'Felt'], ['paper', 'Paper']]} onChange={(table) => onChange({ table })} />
+      <Segmented
+        label="Card back"
+        value={s.cardBack}
+        options={[['amber', 'Amber'], ['ink', 'Ink'], ['oxblood', 'Oxblood'], ['navy', 'Navy']]}
+        onChange={(cardBack) => onChange({ cardBack })}
+      />
       <Toggle label="Four-color deck" checked={s.fourColor} onChange={(fourColor) => onChange({ fourColor })} />
       <Toggle label="Left-handed layout" checked={s.leftHanded} onChange={(leftHanded) => onChange({ leftHanded })} />
       <Toggle label="Sound" checked={s.sound} onChange={(sound) => onChange({ sound })} />

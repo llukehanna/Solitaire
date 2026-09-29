@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { appClassName, effectiveAnimation } from './ui/appClass';
+import { TABLE_BASE, appClassName, effectiveAnimation } from './ui/appClass';
 import { describeHint, describeTurn } from './ui/announce';
 import { NoMovesDialog } from './ui/dialogs/NoMovesDialog';
 import { ResultDialog } from './ui/dialogs/ResultDialog';
@@ -89,6 +89,10 @@ export default function App() {
   useEffect(() => {
     if (solver.hint) setAnnouncement(describeHint(session.state, solver.hint));
   }, [solver.hint, setAnnouncement]);
+
+  useEffect(() => {
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', TABLE_BASE[settings.table]);
+  }, [settings.table]);
 
   const closeStuck = (then?: () => void) => () => {
     solver.dismissStuck();
