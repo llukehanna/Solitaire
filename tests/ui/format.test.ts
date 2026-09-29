@@ -21,4 +21,13 @@ describe('formatScore', () => {
     expect(formatScore(newSession(1, 1, 'vegas'), { ...DEFAULT_SETTINGS, cumulativeVegas: true }, 100)).toBe('$48');
     expect(formatScore(newSession(1, 1, 'none'), DEFAULT_SETTINGS, 0)).toBeNull();
   });
+  it('does not double-count a finished Vegas game already in the bank', () => {
+    const cumulative = { ...DEFAULT_SETTINGS, cumulativeVegas: true };
+    const won = newSession(1, 1, 'vegas');
+    for (const status of ['finishing', 'won'] as const) {
+      expect(formatScore({ ...won, status }, cumulative, 148)).toBe('$148');
+    }
+    // Without the cumulative bank the game's own score is still shown.
+    expect(formatScore({ ...won, status: 'won' }, DEFAULT_SETTINGS, 148)).toBe('-$52');
+  });
 });
