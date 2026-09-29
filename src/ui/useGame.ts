@@ -8,7 +8,7 @@ import { newSession, sessionReducer, type Session } from '../game/session';
 import { elapsed } from '../game/timer';
 import { loadRecent, pushRecent } from '../store/recent';
 import { loadSettings, saveSettings, type Settings } from '../store/settings';
-import { loadStats, recordResult, saveStats, type Stats } from '../store/stats';
+import { importStats as mergeImport, loadStats, recordResult, saveStats, type ImportInput, type Stats } from '../store/stats';
 import { FINISH_STEP_MS, effectiveAnimation } from './appClass';
 
 function freshSession(settings: Settings): Session {
@@ -33,6 +33,8 @@ export interface Game {
   updateSettings(patch: Partial<Settings>): boolean;
   /** Hold the timer paused (e.g. while a dialog is open); visibility changes will not resume it while held. */
   holdTimer(held: boolean): void;
+  /** Merge an outside Draw 1 record into the stats (once per device). */
+  importStats(input: ImportInput): void;
 }
 
 export function useGame(): Game {
@@ -175,6 +177,13 @@ export function useGame(): Game {
     restart,
     switchDraw,
     updateSettings,
+    importStats: useCallback((input: ImportInput) => {
+      setStats((prev) => {
+        const next = mergeImport(prev, input, Date.now());
+        saveStats(next);
+        return next;
+      });
+    }, []),
     holdTimer: useCallback((held: boolean) => {
       heldRef.current = held;
       if (held) dispatch({ type: 'pause', now: Date.now() });

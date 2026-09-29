@@ -148,3 +148,13 @@
   .tb-btn { padding: 8px; }
   .readout { order: 10; width: 100%; justify-content: center; margin: 2px 0 0; padding-top: 6px; border-top: 1px solid var(--chrome-line); }
 }
+
+.link-btn { align-self: flex-start; padding: 0; border: 0; background: none; color: var(--accent); cursor: pointer; font-size: 13.5px; font-weight: 500; }
+.link-btn:hover { text-decoration: underline; }
+.import { display: flex; flex-direction: column; gap: 14px; }
+.import-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.field { display: flex; flex-direction: column; }
+.field .label { margin-bottom: 6px; }
+.field input { min-height: 38px; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--panel-line); background: color-mix(in srgb, var(--ink) 5%, transparent); color: var(--ink); font-family: var(--font-mono); font-size: 14px; }
+.field input:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.note.error { color: #d9573f; }
