@@ -1,0 +1,178 @@
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { pickSeed } from '../deals/bank';
+import { canDraw, canRecycle } from '../engine/rules';
+import type { DrawCount, Move } from '../engine/types';
+import { loadSavedGame, saveGame } from '../game/persist';
+import { newSession, sessionReducer, type Session } from '../game/session';
+import { elapsed } from '../game/timer';
+import { loadRecent, pushRecent } from '../store/recent';
+import { loadSettings, saveSettings, type Settings } from '../store/settings';
+import { loadStats, recordResult, saveStats, type Stats } from '../store/stats';
+import { effectiveAnimation } from './appClass';
+
+const FINISH_STEP_MS = { normal: 80, fast: 40, off: 0 } as const;
+
+function freshSession(settings: Settings): Session {
+  const seed = pickSeed(settings.drawCount, loadRecent(settings.drawCount));
+  pushRecent(settings.drawCount, seed);
+  return newSession(seed, settings.drawCount, settings.scoring);
+}
+
+export interface Game {
+  session: Session;
+  settings: Settings;
+  stats: Stats;
+  turn(moves: Move[]): void;
+  stockTap(): void;
+  undo(): void;
+  redo(): void;
+  rewindTo(index: number): void;
+  newGame(overrides?: Partial<Settings>): void;
+  restart(): void;
+  switchDraw(d: DrawCount): void;
+  /** Returns true when the change only applies from the next game. */
+  updateSettings(patch: Partial<Settings>): boolean;
+  pauseTimer(): void;
+  resumeTimer(): void;
+}
+
+export function useGame(): Game {
+  const [settings, setSettings] = useState(loadSettings);
+  const [stats, setStats] = useState(loadStats);
+  const [session, dispatch] = useReducer(sessionReducer, settings, (s) => loadSavedGame() ?? freshSession(s));
+
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
+
+  const record = useCallback((s: Session, won: boolean) => {
+    setStats((prev) => {
+      const next = recordResult(prev, {
+        drawCount: s.drawCount,
+        scoring: s.scoring,
+        won,
+        timeMs: Math.round(elapsed(s.timer, Date.now())),
+        moves: s.state.moves,
+        score: s.state.score,
+      });
+      saveStats(next);
+      return next;
+    });
+  }, []);
+
+  // Persist after every change, and again when the page is hidden or unloaded so idle timer time is kept.
+  useEffect(() => saveGame(session, Date.now()), [session]);
+  useEffect(() => {
+    const save = () => saveGame(sessionRef.current, Date.now());
+    window.addEventListener('pagehide', save);
+    return () => window.removeEventListener('pagehide', save);
+  }, []);
+
+  // Record a win once, on the transition into 'won'.
+  const prevStatus = useRef(session.status);
+  useEffect(() => {
+    if (prevStatus.current !== 'won' && session.status === 'won') record(session, true);
+    prevStatus.current = session.status;
+  }, [session, record]);
+
+  // Drive the auto-finish animation one move at a time.
+  useEffect(() => {
+    if (session.status !== 'finishing') return;
+    const id = window.setTimeout(
+      () => dispatch({ type: 'finishStep', now: Date.now() }),
+      FINISH_STEP_MS[effectiveAnimation(settingsRef.current)],
+    );
+    return () => window.clearTimeout(id);
+  }, [session]);
+
+  // Pause the timer while the tab is hidden.
+  useEffect(() => {
+    const onVisibility = () =>
+      dispatch(document.hidden ? { type: 'pause', now: Date.now() } : { type: 'resume', now: Date.now() });
+    onVisibility();
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []);
+
+  const abandonCurrent = useCallback(() => {
+    const s = sessionRef.current;
+    if (s.turns.length > 0 && s.status !== 'won') record(s, false);
+  }, [record]);
+
+  const turn = useCallback(
+    (moves: Move[]) => dispatch({ type: 'turn', moves, autoPlay: settingsRef.current.autoPlay, now: Date.now() }),
+    [],
+  );
+  const stockTap = useCallback(() => {
+    const st = sessionRef.current.state;
+    if (canDraw(st)) turn([{ type: 'draw' }]);
+    else if (canRecycle(st)) turn([{ type: 'recycle' }]);
+  }, [turn]);
+  const newGame = useCallback(
+    (overrides?: Partial<Settings>) => {
+      abandonCurrent();
+      dispatch({ type: 'load', session: freshSession({ ...settingsRef.current, ...overrides }) });
+    },
+    [abandonCurrent],
+  );
+  const restart = useCallback(() => {
+    abandonCurrent();
+    dispatch({ type: 'restart' });
+  }, [abandonCurrent]);
+  const writeSettings = useCallback((patch: Partial<Settings>) => {
+    const next = { ...settingsRef.current, ...patch };
+    settingsRef.current = next;
+    saveSettings(next);
+    setSettings(next);
+    return next;
+  }, []);
+  const switchDraw = useCallback(
+    (d: DrawCount) => {
+      writeSettings({ drawCount: d });
+      newGame({ drawCount: d });
+    },
+    [writeSettings, newGame],
+  );
+  const updateSettings = useCallback(
+    (patch: Partial<Settings>) => {
+      const next = writeSettings(patch);
+      const s = sessionRef.current;
+      const rulesChanged = next.drawCount !== s.drawCount || next.scoring !== s.scoring;
+      if (!rulesChanged) return false;
+      if (s.turns.length === 0) {
+        dispatch({ type: 'load', session: freshSession(next) });
+        return false;
+      }
+      return true;
+    },
+    [writeSettings],
+  );
+
+  // Test hook for Playwright (never active without ?e2e in the URL).
+  useEffect(() => {
+    if (!new URLSearchParams(location.search).has('e2e')) return;
+    (window as unknown as { __sol: unknown }).__sol = {
+      session: () => sessionRef.current,
+      turn: (moves: Move[]) => dispatch({ type: 'turn', moves, autoPlay: false, now: Date.now() }),
+      load: (seed: number, drawCount: DrawCount) => dispatch({ type: 'new', seed, drawCount, scoring: 'standard' }),
+    };
+  }, []);
+
+  return {
+    session,
+    settings,
+    stats,
+    turn,
+    stockTap,
+    undo: useCallback(() => dispatch({ type: 'undo' }), []),
+    redo: useCallback(() => dispatch({ type: 'redo', now: Date.now() }), []),
+    rewindTo: useCallback((index: number) => dispatch({ type: 'rewindTo', index }), []),
+    newGame,
+    restart,
+    switchDraw,
+    updateSettings,
+    pauseTimer: useCallback(() => dispatch({ type: 'pause', now: Date.now() }), []),
+    resumeTimer: useCallback(() => dispatch({ type: 'resume', now: Date.now() }), []),
+  };
+}
