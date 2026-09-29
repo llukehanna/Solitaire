@@ -1,6 +1,5 @@
 import { isRed, rankOf, suitIndex, type CardId } from '../engine/cards';
-import { applyMoves } from '../engine/apply';
-import { applyMove } from '../engine/apply';
+import { applyMove, applyMoves } from '../engine/apply';
 import { canMove, canPlayToFoundation, maxRecycles } from '../engine/rules';
 import { applySafeMoves, isWon } from '../engine/movegen';
 import { drawSequence, jumpToStock, reachableStockPositions } from '../engine/stock';
