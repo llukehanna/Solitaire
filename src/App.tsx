@@ -6,7 +6,7 @@ import { ResultDialog } from './ui/dialogs/ResultDialog';
 import { SettingsDialog } from './ui/dialogs/SettingsDialog';
 import { StatsDialog } from './ui/dialogs/StatsDialog';
 import { playSound } from './ui/sound';
-import { StatusBar } from './ui/StatusBar';
+import { Readout } from './ui/Readout';
 import { Table } from './ui/Table';
 import { Toast, useToast } from './ui/Toast';
 import { Toolbar } from './ui/Toolbar';
@@ -115,6 +115,9 @@ export default function App() {
         onCheck={solver.checkWinnable}
         onSettings={() => setDialog('settings')}
         onStats={() => setDialog('stats')}
+        readout={<Readout session={session} settings={settings} vegasBank={stats.vegasBank} />}
+        table={settings.table}
+        onTable={(table) => game.updateSettings({ table })}
       />
       <main className="table-wrap">
         <Table
@@ -134,7 +137,6 @@ export default function App() {
           }}
         />
       </main>
-      <StatusBar session={session} settings={settings} vegasBank={stats.vegasBank} />
       <div className="sr-only" aria-live="polite" aria-atomic="true">
         {announcement.text}
         {announcement.n % 2 ? '' : '\u00a0'}

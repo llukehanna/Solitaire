@@ -37,6 +37,7 @@ export function paintFace(ctx: CanvasRenderingContext2D, id: CardId, w: number, 
   ctx.font = `600 ${w * 0.28}px ${pal.font}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
+  ctx.letterSpacing = '-0.04em';
   ctx.fillText(rankLabel(id), cx, h * 0.06);
   glyph(ctx, SUIT_PATHS[suit], cx - w * 0.095, h * 0.06 + w * 0.3, w * 0.19);
   glyph(ctx, SUIT_PATHS[suit], w * 0.92 - w * 0.47, h * 0.94 - w * 0.47, w * 0.47);
