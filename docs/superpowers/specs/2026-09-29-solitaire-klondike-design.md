@@ -6,11 +6,11 @@
 
 ## Goal
 
-A polished, ad-free Klondike web app that pairs Solitr-level cleanliness and speed with Solitaired-level depth: guaranteed-winnable deals, solver-backed hints, a daily deal with streaks, and local stats. Installable and fully playable offline.
+A polished, ad-free Klondike web app that pairs Solitr-level cleanliness and speed with Solitaired-level depth: every deal guaranteed winnable, solver-backed hints, automatic finish, and local stats. Installable and fully playable offline.
 
 ## Non-goals (v1)
 
-Other variants (FreeCell/Spider come next — engine is structured for them), accounts, cloud sync, leaderboards, ads, monetization, achievements/XP/collectibles.
+Other variants (FreeCell/Spider come next — engine is structured for them), daily deal/streak calendar, random (possibly unwinnable) deals, accounts, cloud sync, leaderboards, ads, monetization, achievements/XP/collectibles.
 
 ## Architecture
 
@@ -20,8 +20,8 @@ Static single-page app. Vite + React + TypeScript. No backend. Deployed to Verce
 src/
   engine/     pure rules: types, deal, moves, apply/undo, scoring. No DOM.
   solver/     search over engine types. Runs in Node (build) and a Web Worker (runtime).
-  deals/      generated winnable seed bank (JSON) + daily-deal selection.
-  store/      localStorage persistence: current game, settings, stats, daily history.
+  deals/      generated winnable seed bank (JSON) + random selection.
+  store/      localStorage persistence: current game, settings, stats.
   ui/         React: table, cards, input (pointer/keyboard), dialogs, themes, win cascade.
 scripts/
   build-deals.ts   offline seed-bank generator (worker_threads, multi-core).
@@ -41,7 +41,8 @@ Dependency direction: `ui → store → engine`, `ui → solver (via worker) →
 - **Scoring (standard, Windows-style):** waste→tableau +5, waste→foundation +10, tableau→foundation +10, tableau card turned face-up +5, foundation→tableau −15, recycle −100 (draw-1) / −20 (draw-3), floor at 0. **Vegas:** −$52 per deal, +$5 per card to foundation; optional cumulative Vegas bank across games (setting).
 - **Move generation:** `legalMoves(state)` returns all legal moves; `destinationsFor(state, source)` returns legal destinations for a picked-up card/run in priority order (below).
 - **Safe auto-foundation:** a card is "safe" to auto-play when its rank ≤ 2, or both opposite-colour foundations are at ≥ rank − 1. Used by the auto-play setting and by the solver.
-- **Win:** all four foundations complete. **Auto-complete available:** stock and waste empty and every tableau card face up.
+- **Win:** all four foundations complete.
+- **Auto-finish trigger:** every tableau card is face up (stock/waste may still hold cards). `autoFinish(state)` returns the move sequence that completes the game. It tries a greedy pass first (play the lowest available card to its foundation, else draw/recycle) and falls back to the solver, which is near-instant here because nothing is hidden. Not every all-face-up position is winnable (draw-3 can bury a needed card in the stock; Vegas can run out of passes), so if neither finds a finish, auto-finish doesn't fire and play continues manually; it re-checks after each subsequent move.
 
 ## Solver
 
@@ -59,16 +60,15 @@ One TypeScript implementation, used at build time (Node) and at runtime (Web Wor
 ## Deal bank
 
 - `scripts/build-deals.ts` iterates seeds across all CPU cores, solves each with a generous budget (~seconds), and keeps only `winnable` seeds. Output: `src/deals/bank-draw1.json`, `bank-draw3.json` — arrays of `{ seed, solutionLength }`.
-- Target: **2,000 seeds per draw mode** at launch (well over 5 years of dailies). Difficulty is recorded (solution length) for future use; not exposed in v1.
+- Target: **2,000 seeds per draw mode** at launch (far more than any player will exhaust; repeats are avoided by tracking recently played seeds). Difficulty is recorded (solution length) for future use; not exposed in v1.
 - **Test:** every banked seed's solution replays through the engine to a win (a sampled subset in the fast test run; the full set in a `test:deals` script).
 - The bank is committed to the repo; the build script is rerun only when the engine or solver changes.
 
 ## Game modes & deals
 
-- **New game** picks a random seed from the bank for the current draw mode (winnable-only, default on). With winnable-only off, a random 32-bit seed is used.
-- **Daily deal:** one per calendar date (user's local date), draw-1, standard scoring. Selected as `bankDraw1[hash('YYYY-MM-DD') % bank.length]`, so everyone gets the same deal that day. Completing it marks the date; a **streak** counts consecutive completed days. A calendar view shows completed days. The daily can be replayed; `sol.v1.daily` records the first win for that date (replays don't overwrite it). Daily games count in the regular draw-1 stats like any other game.
+- **Winnable only:** every new game picks a random seed from the bank for the current draw mode, skipping the last 200 seeds played (`sol.v1.recent`). There is no random-deal option.
 - **Restart** replays the current seed from the start.
-- Settings: draw 1/3, scoring standard/Vegas/none, cumulative Vegas, winnable-only, auto-play safe foundation moves (default on), show timer (default on), sound (default on), left-handed layout, four-colour deck, theme, animation speed (normal/fast/off; reduced-motion forces off).
+- Settings: draw 1/3, scoring standard/Vegas/none, cumulative Vegas, auto-play safe foundation moves (default on), sound (default on), left-handed layout, four-colour deck, theme, animation speed (normal/fast/off; reduced-motion forces off).
 
 ## Solver-backed features
 
@@ -83,13 +83,15 @@ One TypeScript implementation, used at build time (Node) and at runtime (Web Wor
 - **Layout:** stock + waste top-left, foundations top-right (mirrored in left-handed mode), 7 tableau columns below. Card size derives from the viewport width and height so the full table fits without scrolling. Long columns compress face-down and face-up offsets to fit vertically.
 - **Rendering:** 52 absolutely positioned card elements keyed by card id. Position = pure function of (state, layout). Movement is CSS `transform` with transitions, so state changes animate automatically; the drag layer writes transforms directly for 60 fps. Z-order updates on move.
 - **Input (Pointer Events), all active at once:**
-  - **Tap/click** a card: move it (or its run) to the best destination. Priority: foundation → tableau pile where the move reveals a face-down card → non-empty tableau → empty column. Tapping the same card again within 1.5 s cycles to the next legal destination (undoing the previous tap-move).
+  - **Tap/click** a card: move it (or its run) to the best destination. Priority: foundation → tableau pile where the move reveals a face-down card → non-empty tableau → empty column.
   - **Double-tap/click:** send to foundation if legal.
   - **Drag:** 5 px threshold separates tap from drag; `setPointerCapture`; `touch-action: none` on the table. The dragged card/run lifts (slight scale + shadow) and keeps the grab offset. Drop snaps to the legal pile with the largest overlap within a generous radius; an invalid drop springs back.
   - **Stock:** tap to draw; tap the empty stock to recycle.
-  - **Keyboard:** arrow keys move focus across piles/cards, Enter/Space picks up then places, Esc cancels. Shortcuts: `Z`/`Ctrl+Z` undo, `Shift+Z`/`Ctrl+Y` redo, `H` hint, `D`/Space on stock draw, `N` new game, `A` auto-complete.
-- **Chrome:** slim top bar (New ▾, Daily, Undo, Redo, Hint, Settings, Stats) and a status line (score, moves, timer). On phones, the bar condenses to icons; an **Auto-complete** button appears when available.
-- **Win:** classic bouncing-card cascade drawn on a canvas that is never cleared; tap to skip. Then a result card: time, moves, score, streak, New game / Replay.
+  - **Keyboard:** arrow keys move focus across piles/cards, Enter/Space picks up then places, Esc cancels. Shortcuts: `Z`/`Ctrl+Z` undo, `Shift+Z`/`Ctrl+Y` redo, `H` hint, `D`/Space on stock draw, `N` new game.
+- **Chrome:** slim top bar (New ▾, Undo, Redo, Hint, Settings, Stats) and a status line (score, moves, timer). On phones, the bar condenses to icons.
+- **Timer:** always shown. Starts on the first move, pauses when the tab is hidden or a dialog is open, stops on win; elapsed time persists with the saved game.
+- **Auto-finish:** as soon as the last face-down tableau card is turned up and `autoFinish` finds a finish, input locks and the remaining cards fly to the foundations automatically (≈ 80 ms stagger; instant with animations off), then the win sequence plays. Undo after the win is not offered.
+- **Win:** classic bouncing-card cascade drawn on a canvas that is never cleared; tap to skip. Then a result card: time, moves, score, win streak, New game / Replay.
 - **Themes (CSS custom properties + card renderer):**
   - **Classic Felt:** green felt, traditional faces using Adrian Kennard's SVG playing cards (CC0), vendored and pruned to the 52 faces + back.
   - **Modern Minimal (light & dark):** flat table, cards drawn by our own SVG renderer with large corner indices and a large centre suit; court cards show large rank letter + suit. Dark follows `prefers-color-scheme` by default.
@@ -100,9 +102,8 @@ One TypeScript implementation, used at build time (Node) and at runtime (Web Wor
 ## Persistence (localStorage, versioned, validated on read)
 
 - `sol.v1.game`: seed, settings snapshot, move history, redo stack, elapsed time — saved after every move; restored on load. Invalid/corrupt data is discarded (fresh game).
-- `sol.v1.settings`, `sol.v1.stats` (per draw mode: played, won, win %, current/best win streak, best time, fewest moves, best score, Vegas bank), `sol.v1.daily` (map of date → { won, time, moves }).
+- `sol.v1.settings`, `sol.v1.stats` (per draw mode: played, won, win %, current/best win streak, best time, fewest moves, best score, Vegas bank), `sol.v1.recent` (last 200 seeds played per draw mode).
 - All access is wrapped in try/catch; the app works with storage unavailable.
-- Timer pauses when the tab is hidden.
 
 ## Deployment
 
@@ -112,11 +113,11 @@ One TypeScript implementation, used at build time (Node) and at runtime (Web Wor
 
 ## Testing
 
-- **Engine (Vitest, TDD):** deal determinism and layout, every move type's legality and edge cases (King to empty, run moves, Vegas pass limits, recycle), flip-on-expose, undo/redo round-trips restore identical state, scoring deltas, win and auto-complete detection, safe-auto-play rule.
+- **Engine (Vitest, TDD):** deal determinism and layout, every move type's legality and edge cases (King to empty, run moves, Vegas pass limits, recycle), flip-on-expose, undo/redo round-trips restore identical state, scoring deltas, win and auto-finish trigger detection, `autoFinish` completes winnable all-face-up positions (including with cards left in stock, draw-1 and draw-3) and returns null for an unwinnable draw-3 stock arrangement, safe-auto-play rule.
 - **Solver:** solves known-easy positions; proves known-dead positions unwinnable; every returned solution replays to a win; canonical hash collapses symmetric states.
 - **Deal bank:** sampled replay test in the default run; full replay in `npm run test:deals`.
 - **Store:** corrupt/missing/foreign-version data is handled.
-- **E2E (Playwright):** load → play a banked deal to completion by driving its solution through taps; undo/redo; reload restores game; daily deal marks streak; keyboard-only play of a few moves; mobile viewport layout fits without scrolling.
+- **E2E (Playwright):** load → play a banked deal to completion by driving its solution through taps; undo/redo; reload restores game (including elapsed timer); uncovering the last face-down card triggers auto-finish and the win screen; new games never repeat a recent seed; keyboard-only play of a few moves; mobile viewport layout fits without scrolling.
 
 ## Performance budgets
 
