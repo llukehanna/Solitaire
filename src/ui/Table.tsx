@@ -1,9 +1,10 @@
-import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { SUITS, type CardId } from '../engine/cards';
 import { canRecycle } from '../engine/rules';
 import type { GameState, Move } from '../engine/types';
 import type { Settings } from '../store/settings';
 import { Card } from './Card';
+import { pileCards } from './focus';
 import { SUIT_PATHS } from './cards/minimal';
 import { cardPositions, computeLayout, pickupIds, pileRect, slotRect, type CardPos, type Layout, type PileKey } from './layout';
 import type { Focus, Hint, Selection } from './types';
@@ -90,6 +91,11 @@ export function Table(p: TableProps) {
   const selected = useMemo(() => new Set(p.selection ? pickupIds(p.state, p.selection) : []), [p.selection, p.state]);
   const activeId = focusedElementId(p.state, p.focus);
 
+  // When keyboard focus starts, move DOM focus to the table so aria-activedescendant is announced.
+  useEffect(() => {
+    if (p.focus && ref.current && document.activeElement === document.body) ref.current.focus({ preventScroll: true });
+  }, [p.focus]);
+
   let hintTarget: { x: number; y: number; w: number; h: number } | null = null;
   if (layout && p.hint) {
     if (p.hint.kind === 'stock') hintTarget = slotRect(layout, 'S');
@@ -116,6 +122,7 @@ export function Table(p: TableProps) {
           const r = slotRect(layout, k);
           const recyclable = k === 'S' && p.state.stock.length === 0 && canRecycle(p.state);
           const fIndex = k[0] === 'F' ? Number(k.slice(1)) : -1;
+          const empty = pileCards(p.state, k).length === 0;
           return (
             <div
               key={k}
@@ -123,7 +130,7 @@ export function Table(p: TableProps) {
               data-slot={k}
               className={`slot${p.focus?.pile === k && activeId === `pile-${k}` ? ' focused' : ''}`}
               role="img"
-              aria-label={`${pileLabel(k)}, empty`}
+              {...(empty ? { 'aria-label': `${pileLabel(k)}, empty` } : { 'aria-hidden': true })}
               style={{ transform: `translate(${r.x}px, ${r.y}px)`, width: r.w, height: r.h }}
             >
               {k === 'S' && p.state.stock.length === 0 && (
