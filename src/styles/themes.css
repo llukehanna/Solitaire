@@ -1,0 +1,94 @@
+.app {
+  --move-ms: 220ms;
+  --flip-ms: 260ms;
+  --accent: #ffd54f;
+  --suit-S: #1a1a1a;
+  --suit-C: #1a1a1a;
+  --suit-H: #c62828;
+  --suit-D: #c62828;
+  --card-face: #fffdf8;
+  --card-edge: #d9d3c5;
+  --back-a: #1d4f91;
+  --back-b: #163d70;
+  --slot: rgba(255, 255, 255, 0.22);
+  --ink: #f5f2ea;
+  --ink-muted: rgba(245, 242, 234, 0.72);
+  --chrome-bg: rgba(0, 0, 0, 0.22);
+  --panel-bg: #fbfaf6;
+  --panel-ink: #1d1d1b;
+  --panel-muted: #5f5d57;
+  --panel-line: #e3dfd4;
+  --table-bg: radial-gradient(ellipse at 50% 25%, #1c7247 0%, #125a37 50%, #0b3f26 100%);
+  background: var(--table-bg);
+  color: var(--ink);
+}
+
+.theme-minimal {
+  --suit-S: #22252a;
+  --suit-C: #22252a;
+  --suit-H: #d33a3a;
+  --suit-D: #d33a3a;
+  --card-face: #ffffff;
+  --card-edge: #d7dbe0;
+  --back-a: #5b6b82;
+  --back-b: #4d5c71;
+  --slot: rgba(30, 40, 55, 0.14);
+  --ink: #1f2430;
+  --ink-muted: #5d6573;
+  --chrome-bg: rgba(255, 255, 255, 0.6);
+  --table-bg: #eef1f5;
+}
+
+.theme-minimal.mode-dark {
+  --suit-S: #e9ecf1;
+  --suit-C: #e9ecf1;
+  --suit-H: #ff6b6b;
+  --suit-D: #ff6b6b;
+  --card-face: #2a2f38;
+  --card-edge: #3a414d;
+  --back-a: #3b4658;
+  --back-b: #323c4c;
+  --slot: rgba(255, 255, 255, 0.12);
+  --ink: #e9ecf1;
+  --ink-muted: #a3abb8;
+  --chrome-bg: rgba(0, 0, 0, 0.3);
+  --panel-bg: #242933;
+  --panel-ink: #e9ecf1;
+  --panel-muted: #a3abb8;
+  --panel-line: #394150;
+  --table-bg: #171b22;
+}
+
+@media (prefers-color-scheme: dark) {
+  .theme-minimal.mode-auto {
+    --suit-S: #e9ecf1;
+    --suit-C: #e9ecf1;
+    --suit-H: #ff6b6b;
+    --suit-D: #ff6b6b;
+    --card-face: #2a2f38;
+    --card-edge: #3a414d;
+    --back-a: #3b4658;
+    --back-b: #323c4c;
+    --slot: rgba(255, 255, 255, 0.12);
+    --ink: #e9ecf1;
+    --ink-muted: #a3abb8;
+    --chrome-bg: rgba(0, 0, 0, 0.3);
+    --panel-bg: #242933;
+    --panel-ink: #e9ecf1;
+    --panel-muted: #a3abb8;
+    --panel-line: #394150;
+    --table-bg: #171b22;
+  }
+}
+
+.four-color {
+  --suit-D: #1565c0;
+  --suit-C: #2e7d32;
+}
+.theme-minimal.four-color.mode-dark { --suit-D: #64a8ff; --suit-C: #5fcf73; }
+@media (prefers-color-scheme: dark) {
+  .theme-minimal.four-color.mode-auto { --suit-D: #64a8ff; --suit-C: #5fcf73; }
+}
+
+.anim-fast { --move-ms: 120ms; --flip-ms: 140ms; }
+.anim-off { --move-ms: 0ms; --flip-ms: 0ms; }
