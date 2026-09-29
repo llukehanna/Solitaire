@@ -9,6 +9,9 @@ describe('formatTime', () => {
     expect(formatTime(754_000)).toBe('12:34');
     expect(formatTime(3_723_000)).toBe('1:02:03');
   });
+  it('clamps negative durations to zero', () => {
+    expect(formatTime(-500)).toBe('0:00');
+  });
 });
 
 describe('formatScore', () => {
