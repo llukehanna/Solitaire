@@ -32,8 +32,9 @@ export class SolverClient {
   private request(body: RequestBody): Promise<WorkerResponse> {
     const id = this.nextId++;
     return new Promise((resolve, reject) => {
+      const worker = this.ensure(); // may throw if the worker can't be created; the promise then rejects
       this.pending.set(id, { resolve, reject });
-      this.ensure().postMessage({ ...body, id } as WorkerRequest);
+      worker.postMessage({ ...body, id } as WorkerRequest);
     });
   }
 
