@@ -1,6 +1,7 @@
-import { rankOf, suitIndex } from '../engine/cards';
+import { isRed, rankOf, suitIndex, type CardId } from '../engine/cards';
 import { applyMoves } from '../engine/apply';
-import { canMove, canPlayToFoundation } from '../engine/rules';
+import { applyMove } from '../engine/apply';
+import { canMove, canPlayToFoundation, maxRecycles } from '../engine/rules';
 import { applySafeMoves, isWon } from '../engine/movegen';
 import { drawSequence, jumpToStock, reachableStockPositions } from '../engine/stock';
 import type { GameState, Move, PileId } from '../engine/types';
@@ -15,9 +16,16 @@ export interface SolveOptions {
   /** Absolute time (Date.now()) after which the search gives up with 'unknown'. */
   deadline?: number;
   shouldCancel?: () => boolean;
-  /** Respect Vegas recycle limits (used by auto-finish). Default: unlimited recycles. */
+  /**
+   * Respect Vegas recycle limits (used by auto-finish). Default: unlimited recycles and scoring is ignored,
+   * so the solution is valid for `{ ...state, scoring: 'standard' }` but NOT necessarily for a Vegas state.
+   * Callers that must replay a solution against a Vegas state must pass `limitRecycles: true`.
+   */
   limitRecycles?: boolean;
 }
+
+const recyclesLimited = (s: GameState, limitRecycles: boolean): boolean =>
+  limitRecycles && maxRecycles(s) !== Infinity;
 
 export function stateKey(s: GameState, limitRecycles: boolean): string {
   const cols = s.tableau
@@ -27,9 +35,45 @@ export function stateKey(s: GameState, limitRecycles: boolean): string {
   const found = s.foundations.map((f) => f.length).join('.');
   const seq = drawSequence(s);
   let p = s.waste.length;
-  if (limitRecycles) return `${found}|${cols}|${seq.join('.')}|${p}|${s.recycles}`;
+  if (recyclesLimited(s, limitRecycles)) return `${found}|${cols}|${seq.join('.')}|${p}|${s.recycles}`;
   if (s.drawCount === 1 || p % 3 === 0 || p === seq.length) p = 0;
   return `${found}|${cols}|${seq.join('.')}|${p}`;
+}
+
+/**
+ * Stricter safe-to-foundation test for the complete pass, where foundation→tableau moves are allowed:
+ * rank ≤ 2, or both opposite-colour foundations ≥ rank−1 and the other same-colour foundation ≥ rank−2.
+ * (The engine's isSafeToFoundation is only a dominance when cards can never leave the foundations.)
+ */
+function strictSafe(s: GameState, card: CardId): boolean {
+  const r = rankOf(card);
+  if (r <= 2) return true;
+  const suit = suitIndex(card);
+  const [o1, o2] = isRed(card) ? [0, 3] : [1, 2];
+  const sameOther = suit === 0 ? 3 : suit === 3 ? 0 : suit === 1 ? 2 : 1;
+  return (
+    s.foundations[o1].length >= r - 1 && s.foundations[o2].length >= r - 1 && s.foundations[sameOther].length >= r - 2
+  );
+}
+
+function strictSafeMoves(s: GameState, includeWaste: boolean): { state: GameState; moves: Move[] } {
+  const moves: Move[] = [];
+  let cur = s;
+  for (;;) {
+    let found: Move | null = null;
+    const sources: [PileId, CardId | undefined][] = [];
+    if (includeWaste) sources.push(['W', cur.waste[cur.waste.length - 1]]);
+    cur.tableau.forEach((col, i) => sources.push([`T${i}`, col.cards[col.cards.length - 1]]));
+    for (const [from, card] of sources) {
+      if (card !== undefined && canPlayToFoundation(cur, card) && strictSafe(cur, card)) {
+        found = mv(from, `F${suitIndex(card)}`, 1);
+        break;
+      }
+    }
+    if (!found) return { state: cur, moves };
+    cur = applyMove(cur, found);
+    moves.push(found);
+  }
 }
 
 interface Candidate {
@@ -76,7 +120,7 @@ function candidates(s: GameState, complete: boolean, limitRecycles: boolean): Ca
   });
 
   const seq = drawSequence(s);
-  for (const pos of reachableStockPositions(s, !limitRecycles)) {
+  for (const pos of reachableStockPositions(s, !recyclesLimited(s, limitRecycles))) {
     if (pos.p === 0) continue;
     const card = seq[pos.p - 1];
     const at = pos.path.length ? jumpToStock(s, pos) : s;
@@ -115,7 +159,7 @@ class Search {
   ) {}
 
   dfs(s: GameState): Outcome {
-    const safe = applySafeMoves(s, s.drawCount === 1);
+    const safe = this.complete ? strictSafeMoves(s, s.drawCount === 1) : applySafeMoves(s, s.drawCount === 1);
     this.path.push(...safe.moves);
     const cur = safe.state;
     if (isWon(cur)) return 'won';
@@ -145,7 +189,7 @@ class Search {
 }
 
 export function solve(state: GameState, opts: SolveOptions): SolveResult {
-  if (opts.shouldCancel?.()) return { status: 'unknown', nodes: 0 };
+  if (opts.shouldCancel?.() || (opts.deadline !== undefined && Date.now() > opts.deadline)) return { status: 'unknown', nodes: 0 };
   // Scoring never affects legality except Vegas recycle limits; drop it unless limits must be honoured.
   const root: GameState = opts.limitRecycles ? state : { ...state, scoring: 'none' };
 

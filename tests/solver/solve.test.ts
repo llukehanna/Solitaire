@@ -3,7 +3,7 @@ import { solve, stateKey } from '../../src/solver/solve';
 import { applyMove, applyMoves } from '../../src/engine/apply';
 import { isWon } from '../../src/engine/movegen';
 import { deal } from '../../src/engine/deal';
-import { cards, makeState } from '../helpers';
+import { cards, makeState, upTo } from '../helpers';
 import { DEAD_STATE, EASY_STATE, STUCK_DRAW3 } from '../fixtures';
 
 describe('stateKey', () => {
@@ -56,6 +56,31 @@ describe('solve', () => {
     const start = deal(4, 3, 'vegas');
     const r = solve(start, { maxNodes: 200_000, limitRecycles: true });
     if (r.status === 'winnable') expect(isWon(applyMoves(start, r.solution))).toBe(true);
-    expect(['winnable', 'unwinnable', 'unknown']).toContain(r.status);
   }, 60_000);
+  it('replays unlimited-recycle Vegas solutions against the standard-scored state', () => {
+    const start = deal(1, 1, 'vegas');
+    const r = solve(start, { maxNodes: 200_000 });
+    if (r.status === 'winnable') expect(isWon(applyMoves({ ...start, scoring: 'standard' }, r.solution))).toBe(true);
+  }, 60_000);
+  it('returns unknown when the deadline has passed', () => {
+    expect(solve(deal(1, 1, 'standard'), { maxNodes: 1e7, deadline: Date.now() - 1 }).status).toBe('unknown');
+  });
+  it('does not falsely prove unwinnable when foundation cards must come back down', () => {
+    const start = makeState({
+      foundations: [upTo('S', 13), upTo('H', 10), upTo('D', 8), upTo('C', 13)],
+      cols: [
+        ['JH', 0],
+        ['', 0],
+        ['KD', 0],
+        ['', 0],
+        ['QH', 0],
+        ['9D QD TD', 2],
+        ['KH', 0],
+      ],
+      stock: cards('JD'),
+    });
+    const r = solve(start, { maxNodes: 1_000_000 });
+    expect(r.status).toBe('winnable');
+    if (r.status === 'winnable') expect(isWon(applyMoves(start, r.solution))).toBe(true);
+  });
 });
