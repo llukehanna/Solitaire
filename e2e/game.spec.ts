@@ -221,3 +221,18 @@ test('registers a service worker for offline play', async ({ page }) => {
     .poll(() => page.evaluate(async () => !!(await navigator.serviceWorker.getRegistration())), { timeout: 15_000 })
     .toBe(true);
 });
+
+test('a mid-game rules change shows its "next game" note inside the settings dialog', async ({ page }) => {
+  await freshGame(page, { seed: SEED });
+  await clickStock(page);
+  await expect.poll(() => pileCount(page, 'W')).toBe(1);
+  await page.getByRole('button', { name: 'Settings' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Settings' });
+  await expect(dialog.getByText('Applies to your next game.')).toHaveCount(0);
+  await dialog.getByRole('button', { name: 'Draw 3' }).click();
+  await expect(dialog.getByText('Applies to your next game.')).toBeVisible();
+  expect((await getSession(page)).drawCount).toBe(1); // the current game is untouched
+  await dialog.getByRole('button', { name: 'Done' }).click();
+  await page.getByRole('button', { name: 'Settings' }).click();
+  await expect(page.getByRole('dialog', { name: 'Settings' }).getByText('Applies to your next game.')).toHaveCount(0);
+});
