@@ -57,16 +57,16 @@ export function SettingsDialog({ open, settings: s, deferredNote, onChange, onCl
         </>
       )}
       <Toggle
-        label="Auto-play to foundations"
-        hint="Moves cards up automatically when it can never hurt"
-        checked={s.autoPlay}
-        onChange={(autoPlay) => onChange({ autoPlay })}
+        label="Auto-move safe cards to foundations"
+        hint="Off: nothing moves unless you move it. The finish still completes itself."
+        checked={s.autoMove}
+        onChange={(autoMove) => onChange({ autoMove })}
       />
       <Segmented label="Table" value={s.table} options={[['studio', 'Studio'], ['felt', 'Felt'], ['paper', 'Paper']]} onChange={(table) => onChange({ table })} />
       <Segmented
         label="Card back"
         value={s.cardBack}
-        options={[['amber', 'Amber'], ['ink', 'Ink'], ['oxblood', 'Oxblood'], ['navy', 'Navy']]}
+        options={[['deco', 'Deco'], ['amber', 'Amber'], ['ink', 'Ink'], ['oxblood', 'Oxblood'], ['navy', 'Navy']]}
         onChange={(cardBack) => onChange({ cardBack })}
       />
       <Toggle label="Four-color deck" checked={s.fourColor} onChange={(fourColor) => onChange({ fourColor })} />

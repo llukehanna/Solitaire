@@ -106,7 +106,7 @@ export function useGame(): Game {
   }, [record]);
 
   const turn = useCallback(
-    (moves: Move[]) => dispatch({ type: 'turn', moves, autoPlay: settingsRef.current.autoPlay, now: Date.now() }),
+    (moves: Move[]) => dispatch({ type: 'turn', moves, autoPlay: settingsRef.current.autoMove, now: Date.now() }),
     [],
   );
   const stockTap = useCallback(() => {

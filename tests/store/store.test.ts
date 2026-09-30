@@ -31,7 +31,16 @@ describe('settings', () => {
       cardBack: 'navy',
     });
     expect(DEFAULT_SETTINGS.table).toBe('studio');
-    expect(DEFAULT_SETTINGS.cardBack).toBe('amber');
+    expect(DEFAULT_SETTINGS.cardBack).toBe('deco');
+  });
+  it('auto-move is opt-in and ignores the old autoPlay flag', () => {
+    expect(DEFAULT_SETTINGS.autoMove).toBe(false);
+    expect(parseSettings({ autoPlay: true }).autoMove).toBe(false);
+    expect(parseSettings({ autoMove: true }).autoMove).toBe(true);
+    expect(parseSettings({ autoPlay: true })).not.toHaveProperty('autoPlay');
+  });
+  it.each(['deco', 'amber', 'ink', 'oxblood', 'navy'])('accepts the %s card back', (cardBack) => {
+    expect(parseSettings({ cardBack }).cardBack).toBe(cardBack);
   });
   it.each([
     [{ theme: 'classic' }, false, 'felt'],

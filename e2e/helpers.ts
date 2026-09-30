@@ -21,7 +21,7 @@ export async function freshGame(page: Page, opts: { seed?: number; drawCount?: D
     if (sessionStorage.getItem('e2e-init')) return;
     sessionStorage.setItem('e2e-init', '1');
     localStorage.clear();
-    localStorage.setItem('sol.v1.settings', JSON.stringify({ animation: 'off', sound: false, autoPlay: false, ...settings }));
+    localStorage.setItem('sol.v1.settings', JSON.stringify({ animation: 'off', sound: false, autoMove: false, ...settings }));
   }, opts.settings ?? {});
   await page.goto('/?e2e=1');
   await page.waitForFunction(() => !!window.__sol);
