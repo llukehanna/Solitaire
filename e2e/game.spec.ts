@@ -289,6 +289,43 @@ test('auto-move starts off even for players who had auto-play on', async ({ page
   await expect(page.getByRole('checkbox', { name: /Auto-move safe cards to foundations/ })).not.toBeChecked();
 });
 
+test('a legal tap makes exactly one move even with v1.1 autoPlay on, and the v1.1 record is migrated', async ({ page }) => {
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem('e2e-init')) return;
+    sessionStorage.setItem('e2e-init', '1');
+    localStorage.clear();
+    localStorage.setItem(
+      'sol.v1.settings',
+      JSON.stringify({
+        drawCount: 1, scoring: 'standard', cumulativeVegas: false, autoPlay: true, sound: false,
+        leftHanded: false, fourColor: false, table: 'studio', cardBack: 'amber', animation: 'off',
+      }),
+    );
+  });
+  await page.goto('/?e2e=1');
+  await page.waitForFunction(() => !!window.__sol);
+  await page.evaluate((seed) => window.__sol.load(seed, 1), SEED);
+  const tap = firstTap(await getState(page));
+  expect(tap).not.toBeNull();
+  // __sol.turn bypasses auto-move, so this has to be a real tap.
+  await clickCenter(page, `#card-${tap!.id}`);
+  await expect(page.locator(`#card-${tap!.id}`)).toHaveAttribute('data-pile', tap!.to);
+  expect((await getSession(page)).turns.at(-1)!.length).toBe(1);
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('sol.v1.settings')!));
+  expect(saved.autoMove).toBe(false);
+  expect(saved.cardBack).toBe('deco');
+});
+
+test('the chosen card back persists across a reload', async ({ page }) => {
+  await freshGame(page);
+  await page.getByRole('button', { name: 'Settings' }).click();
+  await page.getByRole('button', { name: 'Navy' }).click();
+  await expect(page.locator('.app')).toHaveClass(/\bback-navy\b/);
+  await page.reload();
+  await page.waitForFunction(() => !!window.__sol);
+  await expect(page.locator('.app')).toHaveClass(/\bback-navy\b/);
+});
+
 for (const [width, height] of [[641, 900], [820, 1180], [1024, 768]] as const) {
   for (const scoring of ['standard', 'vegas'] as const) {
     test(`the toolbar stays one row at ${width}x${height} with ${scoring} scoring`, async ({ page }, info) => {
@@ -329,6 +366,57 @@ test('tapping a card with no move shakes it and moves nothing', async ({ page })
   await expect.poll(() => card.evaluate((el) => (el as unknown as { __nope: boolean }).__nope)).toBe(true);
   await expect(card).toHaveAttribute('data-pile', pile);
   expect((await getSession(page)).turns.length).toBe(0);
+});
+
+/** A face-up run of 2+ cards in one column with nowhere to go, if the state has one. */
+function stuckRun(s: GameState): { col: number; ids: number[] } | null {
+  for (let i = 0; i < 7; i++) {
+    const c = s.tableau[i];
+    const n = c.cards.length - c.faceUpFrom;
+    if (n >= 2 && destinationsFor(s, `T${i}` as PileId, n).length === 0) return { col: i, ids: c.cards.slice(-n) };
+  }
+  return null;
+}
+
+/** Shortest scripted sequence of legal non-draw moves (at most `depth`) that leaves a stuck multi-card run. */
+function movesToStuckRun(start: GameState, depth: number): { moves: Move[]; run: { col: number; ids: number[] } } | null {
+  let frontier: [GameState, Move[]][] = [[start, []]];
+  for (let d = 0; d <= depth; d++) {
+    const next: [GameState, Move[]][] = [];
+    for (const [s, moves] of frontier) {
+      const run = stuckRun(s);
+      if (run) return { moves, run };
+      for (const m of legalMoves(s)) if (m.type === 'move') next.push([applyMove(s, m), [...moves, m]]);
+    }
+    frontier = next;
+  }
+  return null;
+}
+
+test('tapping a multi-card run with no move shakes every card in it', async ({ page }) => {
+  await freshGame(page, { seed: SEED, settings: { animation: 'normal' } });
+  const plan = movesToStuckRun(await getState(page), 3);
+  expect(plan).not.toBeNull();
+  await page.evaluate((moves) => window.__sol.turn(moves), plan!.moves);
+  const { col, ids } = plan!.run;
+  expect(ids.length).toBeGreaterThanOrEqual(2);
+  await expect(page.locator(`#card-${ids[0]}`)).toHaveAttribute('data-pile', `T${col}`);
+  const turns = (await getSession(page)).turns.length;
+  for (const id of ids) {
+    await page.locator(`#card-${id}`).evaluate((el) => {
+      (el as unknown as { __nope: boolean }).__nope = false;
+      el.addEventListener('animationstart', (e) => {
+        if ((e as AnimationEvent).animationName === 'nope') (el as unknown as { __nope: boolean }).__nope = true;
+      });
+    });
+  }
+  // Tap the run's first card near its top: the next card in the run covers its centre.
+  await clickCenter(page, `#card-${ids[0]}`, 10);
+  for (const id of ids) {
+    await expect.poll(() => page.locator(`#card-${id}`).evaluate((el) => (el as unknown as { __nope: boolean }).__nope)).toBe(true);
+    await expect(page.locator(`#card-${id}`)).toHaveAttribute('data-pile', `T${col}`);
+  }
+  expect((await getSession(page)).turns.length).toBe(turns);
 });
 
 test('a legal tap does not shake; face-up cards are pickable and face-down ones are not', async ({ page }) => {

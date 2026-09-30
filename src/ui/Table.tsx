@@ -7,7 +7,7 @@ import { effectiveAnimation } from './appClass';
 import { Card } from './Card';
 import { pileCards } from './focus';
 import { SUIT_PATHS } from './cards/suits';
-import { cardPositions, computeLayout, pickupAt, pickupIds, pileRect, slotRect, type CardPos, type Layout, type PileKey } from './layout';
+import { boostedIds, cardPositions, computeLayout, pickupAt, pickupIds, pileRect, slotRect, type CardPos, type Layout, type PileKey } from './layout';
 import type { Focus, Hint, Selection } from './types';
 import { useSize } from './useSize';
 import { useTableInput } from './useTableInput';
@@ -36,8 +36,9 @@ const pileLabel = (k: PileKey) =>
 const MOVING_MS = 450;
 
 /**
- * Cards whose pile changed get a z-index boost while they animate. Boosts accumulate (id -> expiry), so a card
- * still in flight keeps its boost when a later step, such as the next auto-finish move, changes other cards.
+ * Every card in a pile that received a card gets a z-index boost while it animates, so the pile's order holds.
+ * Boosts accumulate (id -> expiry), so a card still in flight keeps its boost when a later step, such as the next
+ * auto-finish move, changes other cards.
  */
 function useMovingCards(positions: Map<CardId, CardPos> | null): Set<CardId> {
   const prev = useRef<Map<CardId, CardPos> | null>(null);
@@ -66,11 +67,9 @@ function useMovingCards(positions: Map<CardId, CardPos> | null): Set<CardId> {
     let changed = false;
     if (prev.current) {
       const at = performance.now() + MOVING_MS;
-      for (const [id, pos] of positions) {
-        if (prev.current.get(id)?.pile !== pos.pile) {
-          expiries.current.set(id, at);
-          changed = true;
-        }
+      for (const id of boostedIds(prev.current, positions)) {
+        expiries.current.set(id, at);
+        changed = true;
       }
     }
     prev.current = positions;

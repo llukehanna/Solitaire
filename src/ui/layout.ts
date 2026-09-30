@@ -114,6 +114,16 @@ export function cardPositions(s: GameState, L: Layout): Map<CardId, CardPos> {
   return out;
 }
 
+/** Cards to z-boost after a layout change: every card in any pile that received a card, so a pile's order holds. */
+export function boostedIds(prev: Map<CardId, CardPos>, next: Map<CardId, CardPos>): CardId[] {
+  const received = new Set<PileKey>();
+  for (const [id, pos] of next) if (prev.get(id)?.pile !== pos.pile) received.add(pos.pile);
+  if (received.size === 0) return [];
+  const out: CardId[] = [];
+  for (const [id, pos] of next) if (received.has(pos.pile)) out.push(id);
+  return out;
+}
+
 export function slotRect(L: Layout, pile: PileKey): Rect {
   const at = (p: Point): Rect => ({ x: p.x, y: p.y, w: L.cardW, h: L.cardH });
   if (pile === 'S') return at(L.stock);

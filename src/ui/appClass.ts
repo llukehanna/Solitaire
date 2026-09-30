@@ -15,7 +15,7 @@ export const effectiveAnimation = (s: Settings): AnimationSpeed =>
 export const celebrationAllowed = (s: Settings): boolean => s.animation !== 'off' && !prefersReducedMotion();
 
 /** Base colour of each table, for <meta name="theme-color">. */
-export const TABLE_BASE: Record<TableTheme, string> = { studio: '#131110', felt: '#0c241b', paper: '#e9e6e0' };
+export const TABLE_BASE: Record<TableTheme, string> = { studio: '#0f0d0b', felt: '#0c241b', paper: '#e9e6e0' };
 
 export function appClassName(s: Settings): string {
   return [
