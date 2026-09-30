@@ -8,11 +8,16 @@
   min-height: 52px;
   padding: 6px 10px;
   background: var(--chrome-bg);
-  border-bottom: 1px solid var(--chrome-line);
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  margin: 10px 12px 0;
+  border: 1px solid var(--chrome-line);
+  border-radius: 12px;
+  box-shadow: var(--chrome-shadow, none);
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
 }
 .wordmark { font-weight: 600; font-size: 15px; letter-spacing: -0.01em; margin: 0 10px 0 4px; }
+.wordmark-dot { display: none; }
+.table-studio .wordmark-dot { display: inline; color: var(--accent); }
 .tb-btn {
   display: inline-flex;
   align-items: center;

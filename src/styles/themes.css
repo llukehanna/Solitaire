@@ -17,10 +17,14 @@
 
 /* Studio: warm charcoal, lukeghanna.com dark. */
 .table-studio {
-  --bg: #131110;
-  --glow: radial-gradient(120% 70% at 50% -10%, #2a2118 0%, #151210 55%, transparent 100%);
-  --chrome-bg: linear-gradient(170deg, #ffffff12, #ffffff05);
-  --chrome-line: #ffffff14;
+  --bg: #0f0d0b;
+  --glow: radial-gradient(70% 60% at 50% 18%, #3a2c1d 0%, #1c1612 55%, #0f0d0b 100%);
+  --chrome-bg: linear-gradient(170deg, #ffffff17, #ffffff06);
+  --chrome-line: #ffffff18;
+  --chrome-shadow: 0 10px 30px #0006, 0 1px 0 #ffffff1f inset;
+  --texture: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.55' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --texture-blend: soft-light;
+  --texture-opacity: 0.35;
   --panel-bg: #1c1916f2;
   --panel-line: #ffffff14;
   --ink: #f0ebe3;
@@ -38,8 +42,12 @@
 .table-felt {
   --bg: #0c241b;
   --glow: radial-gradient(110% 80% at 50% 0%, #1d4a36 0%, #123326 55%, transparent 100%);
-  --chrome-bg: #0000002e;
+  --chrome-bg: linear-gradient(170deg, #ffffff17, #ffffff06);
   --chrome-line: #ffffff12;
+  --chrome-shadow: 0 10px 30px #0006, 0 1px 0 #ffffff1f inset;
+  --texture: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --texture-blend: overlay;
+  --texture-opacity: 0.55;
   --panel-bg: #10281ef2;
   --panel-line: #ffffff14;
   --ink: #eef3ef;
@@ -60,6 +68,10 @@
   --glow: radial-gradient(120% 80% at 50% 0%, #f5f2ec 0%, transparent 100%);
   --chrome-bg: #ffffff80;
   --chrome-line: #0000000f;
+  --chrome-shadow: 0 8px 24px #0000001a;
+  --texture: repeating-linear-gradient(0deg, #00000008 0 1px, transparent 1px 3px), repeating-linear-gradient(90deg, #00000006 0 1px, transparent 1px 3px), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .3 0 0 0 0 .25 0 0 0 0 .2 0 0 0 .25 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --texture-blend: normal;
+  --texture-opacity: 0.6;
   --panel-bg: #f7f5f0f2;
   --panel-line: #00000014;
   --ink: #151412;
