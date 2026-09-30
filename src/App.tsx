@@ -97,6 +97,9 @@ export default function App() {
 
   useEffect(() => {
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', TABLE_BASE[settings.table]);
+    // iOS shows the page (not .app) in the safe areas, under the toolbar and on overscroll: keep it the table colour.
+    document.documentElement.style.backgroundColor = TABLE_BASE[settings.table];
+    document.body.style.backgroundColor = TABLE_BASE[settings.table];
   }, [settings.table]);
 
   const closeStuck = (then?: () => void) => () => {

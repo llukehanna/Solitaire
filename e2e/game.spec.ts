@@ -546,3 +546,17 @@ test('the flip honours the animation setting', async ({ page }) => {
   });
   expect(dur.find(([p]) => p === 'transform')?.[1]).toBe('0s');
 });
+
+test('the page behind the app matches the table, so iPhone safe areas are never white', async ({ page }) => {
+  await freshGame(page, { seed: SEED, settings: { table: 'studio' } });
+  const pageBg = () => page.evaluate(() => [getComputedStyle(document.documentElement).backgroundColor, getComputedStyle(document.body).backgroundColor]);
+  expect(await pageBg()).toEqual(['rgb(15, 13, 11)', 'rgb(15, 13, 11)']);
+  await page.getByRole('radio', { name: 'Paper table' }).click();
+  expect(await pageBg()).toEqual(['rgb(233, 230, 224)', 'rgb(233, 230, 224)']);
+});
+
+test('the home-screen app draws under a translucent iOS status bar', async ({ page }) => {
+  await freshGame(page, { seed: SEED });
+  await expect(page.locator('meta[name="apple-mobile-web-app-capable"]')).toHaveAttribute('content', 'yes');
+  await expect(page.locator('meta[name="apple-mobile-web-app-status-bar-style"]')).toHaveAttribute('content', 'black-translucent');
+});
