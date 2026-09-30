@@ -41,7 +41,7 @@ export const Card = memo(
         }}
       >
         {/* A new key on each rejected tap remounts the inner element so the shake replays. */}
-        <div className="card-inner" key={p.nopeKey}>
+        <div className="card-inner" key={p.nopeKey} aria-hidden="true">
           {/* The face stays rendered while face down so a flip never shows a blank card. */}
           <div className="card-front"><CardFront id={p.id} /></div>
           <div className="card-back" />

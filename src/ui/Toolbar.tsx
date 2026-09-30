@@ -53,7 +53,7 @@ export function Toolbar(p: ToolbarProps) {
   };
   return (
     <header className="toolbar">
-      <span className="wordmark">Solitaire<span className="wordmark-dot">.</span></span>
+      <span className="wordmark">Solitaire<span className="wordmark-dot" aria-hidden="true">.</span></span>
       <details className="menu" ref={menu}>
         <summary className="tb-btn" aria-label="Game menu" title="Game menu">
           <Icon name="cards" />
