@@ -415,6 +415,21 @@ test('the Settings dialog does not scroll sideways on any tab', async ({ page })
   }
 });
 
+test('only the Deco card back shows the medallion, whatever back is current', async ({ page }) => {
+  await freshGame(page, { settings: { cardBack: 'navy' } });
+  await page.getByRole('button', { name: 'Settings' }).click();
+  const backs = settingsDialog(page).getByRole('radiogroup', { name: 'Card back' });
+  const medallion = (name: string) =>
+    backs.getByRole('radio', { name }).locator('.card-back').evaluate((el) => getComputedStyle(el, '::before').display);
+  expect(await medallion('Deco')).toBe('block');
+  for (const name of ['Amber', 'Ink', 'Oxblood', 'Navy']) expect(await medallion(name), name).toBe('none');
+  // The live preview back follows the current back (navy: none), and switches to Deco with it.
+  const previewBack = page.getByTestId('appearance-preview').locator('.card-back');
+  expect(await previewBack.evaluate((el) => getComputedStyle(el, '::before').display)).toBe('none');
+  await backs.getByRole('radio', { name: 'Deco' }).click();
+  expect(await previewBack.evaluate((el) => getComputedStyle(el, '::before').display)).toBe('block');
+});
+
 for (const [width, height] of [[641, 900], [820, 1180], [1024, 768]] as const) {
   for (const scoring of ['standard', 'vegas'] as const) {
     test(`the toolbar stays one row at ${width}x${height} with ${scoring} scoring`, async ({ page }, info) => {

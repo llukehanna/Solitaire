@@ -127,8 +127,8 @@
 
 .four-color { --suit-D: #1565c0; --suit-C: #2e7d32; }
 
-.back-deco { --back: linear-gradient(160deg, #3a2d1f, #1d160f); --back-frame: #f2c14e55; --back-pattern: conic-gradient(from 45deg at 50% 50%, #f2c14e14 0 25%, transparent 0 50%, #f2c14e14 0 75%, transparent 0) 0 0 / 12px 12px; }
-.back-amber { --back: linear-gradient(160deg, #3a2d1f, #241b13); --back-frame: #f2c14e33; --back-pattern: repeating-linear-gradient(45deg, #f2c14e10 0 2px, transparent 2px 7px); }
-.back-ink { --back: #1f1d1a; --back-frame: #ffffff18; --back-pattern: radial-gradient(circle, #f2c14e55 0 4px, transparent 5px); }
-.back-oxblood { --back: linear-gradient(160deg, #7b2a26, #531a18); --back-frame: #ffffff30; --back-pattern: repeating-linear-gradient(0deg, #ffffff0a 0 1px, transparent 1px 4px); }
-.back-navy { --back: linear-gradient(160deg, #22324a, #141e2e); --back-frame: #9fb6d633; --back-pattern: repeating-linear-gradient(-45deg, #9fb6d614 0 1px, transparent 1px 6px), repeating-linear-gradient(45deg, #9fb6d614 0 1px, transparent 1px 6px); }
+.back-deco { --back-medallion: block; --back: linear-gradient(160deg, #3a2d1f, #1d160f); --back-frame: #f2c14e55; --back-pattern: conic-gradient(from 45deg at 50% 50%, #f2c14e14 0 25%, transparent 0 50%, #f2c14e14 0 75%, transparent 0) 0 0 / 12px 12px; }
+.back-amber { --back-medallion: none; --back: linear-gradient(160deg, #3a2d1f, #241b13); --back-frame: #f2c14e33; --back-pattern: repeating-linear-gradient(45deg, #f2c14e10 0 2px, transparent 2px 7px); }
+.back-ink { --back-medallion: none; --back: #1f1d1a; --back-frame: #ffffff18; --back-pattern: radial-gradient(circle, #f2c14e55 0 4px, transparent 5px); }
+.back-oxblood { --back-medallion: none; --back: linear-gradient(160deg, #7b2a26, #531a18); --back-frame: #ffffff30; --back-pattern: repeating-linear-gradient(0deg, #ffffff0a 0 1px, transparent 1px 4px); }
+.back-navy { --back-medallion: none; --back: linear-gradient(160deg, #22324a, #141e2e); --back-frame: #9fb6d633; --back-pattern: repeating-linear-gradient(-45deg, #9fb6d614 0 1px, transparent 1px 6px), repeating-linear-gradient(45deg, #9fb6d614 0 1px, transparent 1px 6px); }
