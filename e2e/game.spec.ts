@@ -317,8 +317,16 @@ test('tapping a card with no move shakes it and moves nothing', async ({ page })
   expect(id).not.toBeNull();
   const card = page.locator(`#card-${id}`);
   const pile = (await card.getAttribute('data-pile'))!;
+  // The nope class only lives ~400ms, so watch for the animation itself instead of polling a class.
+  // The listener is on .card, which is not remounted (only .card-inner is).
+  await card.evaluate((el) => {
+    (el as unknown as { __nope: boolean }).__nope = false;
+    el.addEventListener('animationstart', (e) => {
+      if ((e as AnimationEvent).animationName === 'nope') (el as unknown as { __nope: boolean }).__nope = true;
+    });
+  });
   await clickCenter(page, `#card-${id}`);
-  await expect(card).toHaveClass(/\bnope\b/);
+  await expect.poll(() => card.evaluate((el) => (el as unknown as { __nope: boolean }).__nope)).toBe(true);
   await expect(card).toHaveAttribute('data-pile', pile);
   expect((await getSession(page)).turns.length).toBe(0);
 });
@@ -330,8 +338,19 @@ test('a legal tap does not shake; face-up cards are pickable and face-down ones 
   await expect(page.locator(`#card-${col[col.length - 1]}`)).toHaveClass(/\bpickable\b/);
   await expect(page.locator(`#card-${col[0]}`)).not.toHaveClass(/\bpickable\b/);
   const tap = firstTap(s);
-  if (!tap) return;
-  await clickCenter(page, `#card-${tap.id}`);
-  await expect(page.locator(`#card-${tap.id}`)).toHaveAttribute('data-pile', tap.to);
-  await expect(page.locator(`#card-${tap.id}`)).not.toHaveClass(/\bnope\b/);
+  expect(tap).not.toBeNull();
+  await clickCenter(page, `#card-${tap!.id}`);
+  await expect(page.locator(`#card-${tap!.id}`)).toHaveAttribute('data-pile', tap!.to);
+  await expect(page.locator(`#card-${tap!.id}`)).not.toHaveClass(/\bnope\b/);
+});
+
+test('the flip honours the animation setting', async ({ page }) => {
+  await freshGame(page, { seed: SEED, settings: { animation: 'off' } });
+  await clickStock(page);
+  await expect.poll(() => pileCount(page, 'W')).toBe(1);
+  const dur = await page.locator('[data-card][data-pile="W"] .card-inner').evaluate((el) => {
+    const cs = getComputedStyle(el);
+    return cs.transitionProperty.split(',').map((p, i) => [p.trim(), cs.transitionDuration.split(',')[i].trim()]);
+  });
+  expect(dur.find(([p]) => p === 'transform')?.[1]).toBe('0s');
 });
