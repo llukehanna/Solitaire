@@ -8,17 +8,26 @@
   isolation: isolate;
 }
 .table-wrap { position: relative; flex: 1; min-height: 0; }
-/* Table texture sits above the base gradient and below everything else. */
-.app::before {
+/* Table texture: two layers above the base gradient and below everything else. `.textured` reuses them for swatches and previews. */
+.app::before, .textured::before,
+.app::after, .textured::after {
   content: '';
   position: absolute;
   inset: 0;
   z-index: -1;
   pointer-events: none;
+}
+.app::before, .textured::before {
   background: var(--texture, none);
   mix-blend-mode: var(--texture-blend, normal);
   opacity: var(--texture-opacity, 0);
 }
+.app::after, .textured::after {
+  background: var(--texture2, none);
+  mix-blend-mode: var(--texture2-blend, normal);
+  opacity: var(--texture2-opacity, 0);
+}
+.textured { position: relative; isolation: isolate; overflow: hidden; }
 .table-wrap::before { content: ''; position: absolute; pointer-events: none; }
 /* Studio: a stitched rail around the play area. Felt: a vignette. */
 .table-studio .table-wrap::before { inset: 10px; border: 1px dashed #f2c14e2e; border-radius: 12px; }

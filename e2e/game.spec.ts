@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { deal } from '../src/engine/deal';
 import { applyMove } from '../src/engine/apply';
 import { destinationsFor, legalMoves } from '../src/engine/movegen';
@@ -244,13 +244,16 @@ test('a mid-game rules change shows its "next game" note inside the settings dia
   await expect.poll(() => pileCount(page, 'W')).toBe(1);
   await page.getByRole('button', { name: 'Settings' }).click();
   const dialog = page.getByRole('dialog', { name: 'Settings' });
+  await dialog.getByRole('tab', { name: 'Game' }).click();
   await expect(dialog.getByText('Applies to your next game.')).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Draw 3' }).click();
   await expect(dialog.getByText('Applies to your next game.')).toBeVisible();
   expect((await getSession(page)).drawCount).toBe(1); // the current game is untouched
   await dialog.getByRole('button', { name: 'Done' }).click();
   await page.getByRole('button', { name: 'Settings' }).click();
-  await expect(page.getByRole('dialog', { name: 'Settings' }).getByText('Applies to your next game.')).toHaveCount(0);
+  const reopened = page.getByRole('dialog', { name: 'Settings' });
+  await reopened.getByRole('tab', { name: 'Game' }).click();
+  await expect(reopened.getByText('Applies to your next game.')).toHaveCount(0);
 });
 
 test('the table switch changes the look and persists across reload', async ({ page }) => {
@@ -286,6 +289,7 @@ test('auto-move starts off even for players who had auto-play on', async ({ page
   await page.goto('/?e2e=1');
   await page.waitForFunction(() => !!window.__sol);
   await page.getByRole('button', { name: 'Settings' }).click();
+  await page.getByRole('tab', { name: 'Game' }).click();
   await expect(page.getByRole('checkbox', { name: /Auto-move safe cards to foundations/ })).not.toBeChecked();
 });
 
@@ -319,11 +323,96 @@ test('a legal tap makes exactly one move even with v1.1 autoPlay on, and the v1.
 test('the chosen card back persists across a reload', async ({ page }) => {
   await freshGame(page);
   await page.getByRole('button', { name: 'Settings' }).click();
-  await page.getByRole('button', { name: 'Navy' }).click();
+  await page.getByRole('radiogroup', { name: 'Card back' }).getByRole('radio', { name: 'Navy' }).click();
   await expect(page.locator('.app')).toHaveClass(/\bback-navy\b/);
   await page.reload();
   await page.waitForFunction(() => !!window.__sol);
   await expect(page.locator('.app')).toHaveClass(/\bback-navy\b/);
+});
+
+const settingsDialog = (page: Page) => page.getByRole('dialog', { name: 'Settings' });
+
+test('Settings opens on Appearance with a live preview', async ({ page }) => {
+  await freshGame(page);
+  await page.getByRole('button', { name: 'Settings' }).click();
+  const dialog = settingsDialog(page);
+  await expect(dialog.getByRole('tab', { name: 'Appearance' })).toHaveAttribute('aria-selected', 'true');
+  await expect(dialog.getByRole('tabpanel')).toBeVisible();
+  await expect(dialog.getByTestId('appearance-preview')).toBeVisible();
+  // Leaving and reopening resets to Appearance.
+  await dialog.getByRole('tab', { name: 'Game' }).click();
+  await dialog.getByRole('button', { name: 'Done' }).click();
+  await page.getByRole('button', { name: 'Settings' }).click();
+  await expect(settingsDialog(page).getByRole('tab', { name: 'Appearance' })).toHaveAttribute('aria-selected', 'true');
+});
+
+test('tabs move with the arrow keys', async ({ page }) => {
+  await freshGame(page);
+  await page.getByRole('button', { name: 'Settings' }).click();
+  const dialog = settingsDialog(page);
+  await dialog.getByRole('tab', { name: 'Appearance' }).focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(dialog.getByRole('tab', { name: 'Game' })).toHaveAttribute('aria-selected', 'true');
+  await expect(dialog.getByRole('tab', { name: 'Game' })).toBeFocused();
+  await page.keyboard.press('ArrowRight');
+  await expect(dialog.getByRole('tab', { name: 'Controls' })).toHaveAttribute('aria-selected', 'true');
+  await page.keyboard.press('ArrowRight');
+  await expect(dialog.getByRole('tab', { name: 'Appearance' })).toHaveAttribute('aria-selected', 'true');
+});
+
+test('the Cloth group shows only on Felt; the chosen cloth persists across a reload', async ({ page }) => {
+  await freshGame(page);
+  await page.getByRole('button', { name: 'Settings' }).click();
+  const dialog = settingsDialog(page);
+  await expect(dialog.getByRole('radiogroup', { name: 'Cloth' })).toHaveCount(0);
+  await dialog.getByRole('radiogroup', { name: 'Table' }).getByRole('radio', { name: 'Felt' }).click();
+  await expect(page.locator('.app')).toHaveClass(/table-felt/);
+  const cloth = dialog.getByRole('radiogroup', { name: 'Cloth' });
+  await expect(cloth).toBeVisible();
+  await expect(cloth.getByRole('radio', { name: 'Baize' })).toHaveAttribute('aria-checked', 'true'); // the default
+  await cloth.getByRole('radio', { name: 'Casino' }).click();
+  await expect(page.locator('.app')).toHaveClass(/\bcloth-casino\b/);
+  await page.reload();
+  await page.waitForFunction(() => !!window.__sol);
+  await expect(page.locator('.app')).toHaveClass(/\bcloth-casino\b/);
+  await page.getByRole('button', { name: 'Settings' }).click();
+  await expect(settingsDialog(page).getByRole('radiogroup', { name: 'Cloth' }).getByRole('radio', { name: 'Casino' })).toHaveAttribute('aria-checked', 'true');
+  await settingsDialog(page).getByRole('radiogroup', { name: 'Table' }).getByRole('radio', { name: 'Studio' }).click();
+  await expect(settingsDialog(page).getByRole('radiogroup', { name: 'Cloth' })).toHaveCount(0);
+});
+
+test('suit colours pick two- or four-colour', async ({ page }) => {
+  await freshGame(page);
+  await page.getByRole('button', { name: 'Settings' }).click();
+  const suits = settingsDialog(page).getByRole('radiogroup', { name: 'Suit colours' });
+  await expect(suits.getByRole('radio', { name: 'Two-colour' })).toHaveAttribute('aria-checked', 'true');
+  await suits.getByRole('radio', { name: 'Four-colour' }).click();
+  await expect(page.locator('.app')).toHaveClass(/\bfour-color\b/);
+  await suits.getByRole('radio', { name: 'Two-colour' }).click();
+  await expect(page.locator('.app')).not.toHaveClass(/\bfour-color\b/);
+});
+
+test('the Game and Controls tabs hold their settings', async ({ page }) => {
+  await freshGame(page);
+  await page.getByRole('button', { name: 'Settings' }).click();
+  const dialog = settingsDialog(page);
+  await dialog.getByRole('tab', { name: 'Game' }).click();
+  await expect(dialog.getByRole('button', { name: 'Draw 3' })).toBeVisible();
+  await expect(dialog.getByRole('checkbox', { name: 'Left-handed layout' })).toBeVisible();
+  await dialog.getByRole('tab', { name: 'Controls' }).click();
+  await expect(dialog.getByText('Space / D')).toBeVisible();
+  await expect(dialog.getByRole('checkbox', { name: 'Sound' })).toBeVisible();
+});
+
+test('the Settings dialog does not scroll sideways on any tab', async ({ page }) => {
+  await freshGame(page, { settings: { table: 'felt' } });
+  await page.getByRole('button', { name: 'Settings' }).click();
+  const dialog = settingsDialog(page);
+  for (const tab of ['Appearance', 'Game', 'Controls']) {
+    await dialog.getByRole('tab', { name: tab }).click();
+    const m = await page.locator('dialog[open] .modal-card').evaluate((el) => ({ sw: el.scrollWidth, cw: el.clientWidth }));
+    expect(m.sw, tab).toBeLessThanOrEqual(m.cw);
+  }
 });
 
 for (const [width, height] of [[641, 900], [820, 1180], [1024, 768]] as const) {

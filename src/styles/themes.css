@@ -25,6 +25,8 @@
   --texture: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.55' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   --texture-blend: soft-light;
   --texture-opacity: 0.35;
+  --texture2: none; /* explicit, so nested swatches don't inherit another table's second layer */
+  --texture2-opacity: 0;
   --panel-bg: #1c1916f2;
   --panel-line: #ffffff14;
   --ink: #f0ebe3;
@@ -48,6 +50,8 @@
   --texture: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   --texture-blend: overlay;
   --texture-opacity: 0.55;
+  --texture2: none; /* explicit, so nested swatches don't inherit another table's second layer */
+  --texture2-opacity: 0;
   --panel-bg: #10281ef2;
   --panel-line: #ffffff14;
   --ink: #eef3ef;
@@ -61,6 +65,37 @@
   --focus: #e9dcb8;
 }
 
+/* Felt cloths: texture layers only; every other token comes from .table-felt. `fine` keeps the base felt values. */
+.table-felt.cloth-fibre {
+  --texture: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='2.2' intercept='-.6'/%3E%3CfeFuncG type='linear' slope='2.2' intercept='-.6'/%3E%3CfeFuncB type='linear' slope='2.2' intercept='-.6'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --texture-blend: soft-light;
+  --texture-opacity: 0.9;
+}
+.table-felt.cloth-baize {
+  --texture: repeating-linear-gradient(45deg, #ffffff0c 0 1px, transparent 1px 4px), repeating-linear-gradient(-45deg, #0000001f 0 1px, transparent 1px 4px);
+  --texture-blend: normal;
+  --texture-opacity: 1;
+  --texture2: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='2' intercept='-.5'/%3E%3CfeFuncG type='linear' slope='2' intercept='-.5'/%3E%3CfeFuncB type='linear' slope='2' intercept='-.5'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --texture2-blend: soft-light;
+  --texture2-opacity: 0.7;
+}
+.table-felt.cloth-brushed {
+  --texture: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.012 .9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='2.4' intercept='-.7'/%3E%3CfeFuncG type='linear' slope='2.4' intercept='-.7'/%3E%3CfeFuncB type='linear' slope='2.4' intercept='-.7'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --texture-blend: soft-light;
+  --texture-opacity: 0.75;
+  --texture2: linear-gradient(115deg, transparent 20%, #ffffff10 45%, transparent 70%);
+  --texture2-blend: normal;
+  --texture2-opacity: 1;
+}
+.table-felt.cloth-casino {
+  --texture: conic-gradient(from 45deg at 50% 50%, #ffffff08 0 25%, transparent 0 50%, #ffffff08 0 75%, transparent 0) 0 0 / 34px 34px;
+  --texture-blend: normal;
+  --texture-opacity: 1;
+  --texture2: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='2' intercept='-.5'/%3E%3CfeFuncG type='linear' slope='2' intercept='-.5'/%3E%3CfeFuncB type='linear' slope='2' intercept='-.5'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --texture2-blend: soft-light;
+  --texture2-opacity: 0.7;
+}
+
 /* Paper: lukeghanna.com light. */
 .table-paper {
   --bg: #e9e6e0;
@@ -71,6 +106,8 @@
   --texture: repeating-linear-gradient(0deg, #00000008 0 1px, transparent 1px 3px), repeating-linear-gradient(90deg, #00000006 0 1px, transparent 1px 3px), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .3 0 0 0 0 .25 0 0 0 0 .2 0 0 0 .15 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   --texture-blend: normal;
   --texture-opacity: 1;
+  --texture2: none; /* explicit, so nested swatches don't inherit another table's second layer */
+  --texture2-opacity: 0;
   --panel-bg: #f7f5f0f2;
   --panel-line: #00000014;
   --ink: #151412;

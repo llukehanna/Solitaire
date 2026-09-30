@@ -1,7 +1,7 @@
 import { beforeEach, describe, it, expect } from 'vitest';
 import { installLocalStorage, removeLocalStorage } from '../localStorage';
 import { KEYS, readJSON, writeJSON } from '../../src/store/storage';
-import { DEFAULT_SETTINGS, loadSettings, parseSettings, saveSettings } from '../../src/store/settings';
+import { CLOTHS, DEFAULT_SETTINGS, loadSettings, parseSettings, saveSettings } from '../../src/store/settings';
 import { emptyStats, importStats, parseImportForm, parseStats, recordResult, SOLITAIRED_PREFILL, winRate } from '../../src/store/stats';
 import { RECENT_LIMIT, loadRecent, pushRecent } from '../../src/store/recent';
 
@@ -32,6 +32,22 @@ describe('settings', () => {
     });
     expect(DEFAULT_SETTINGS.table).toBe('studio');
     expect(DEFAULT_SETTINGS.cardBack).toBe('deco');
+  });
+  it('cloth defaults to baize; two-colour suits stay the default', () => {
+    expect(DEFAULT_SETTINGS.cloth).toBe('baize');
+    expect(DEFAULT_SETTINGS.fourColor).toBe(false);
+  });
+  it.each(['fine', 'fibre', 'baize', 'brushed', 'casino'])('accepts the %s cloth', (cloth) => {
+    expect(CLOTHS).toContain(cloth);
+    expect(parseSettings({ cloth }).cloth).toBe(cloth);
+  });
+  it('garbage or missing cloth parses to baize', () => {
+    expect(parseSettings({ cloth: 'velvet' }).cloth).toBe('baize');
+    expect(parseSettings({ cloth: 7 }).cloth).toBe('baize');
+    expect(parseSettings({}).cloth).toBe('baize');
+  });
+  it('a stored four-colour choice is kept', () => {
+    expect(parseSettings({ fourColor: true }).fourColor).toBe(true);
   });
   it('auto-move is opt-in and ignores the old autoPlay flag', () => {
     expect(DEFAULT_SETTINGS.autoMove).toBe(false);
