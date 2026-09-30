@@ -32,13 +32,21 @@ export function paintFace(ctx: CanvasRenderingContext2D, id: CardId, w: number, 
   ctx.beginPath();
   ctx.roundRect(0, 0, w, h, w * 0.055);
   ctx.fill();
+  // Hairline keyline inside the edge, as on the CSS face.
+  const inset = w * 0.033;
+  ctx.strokeStyle = '#0000000d';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(inset + 0.5, inset + 0.5, w - 2 * inset - 1, h - 2 * inset - 1, w * 0.043);
+  ctx.stroke();
   ctx.fillStyle = pal[suit];
-  const cx = w * 0.08 + w * 0.14; // centre of the index column
-  ctx.font = `600 ${w * 0.28}px ${pal.font}`;
+  const top = w * 0.076;
+  const cx = w * 0.076 + w * 0.13; // centre of the 0.26w index column
+  ctx.font = `600 ${w * 0.26}px ${pal.font}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  ctx.letterSpacing = '-0.04em';
-  ctx.fillText(rankLabel(id), cx, h * 0.06);
-  glyph(ctx, SUIT_PATHS[suit], cx - w * 0.095, h * 0.06 + w * 0.3, w * 0.19);
-  glyph(ctx, SUIT_PATHS[suit], w * 0.92 - w * 0.47, h * 0.94 - w * 0.47, w * 0.47);
+  ctx.letterSpacing = '-0.05em';
+  ctx.fillText(rankLabel(id), cx, top);
+  glyph(ctx, SUIT_PATHS[suit], cx - w * 0.0815, top + w * 0.26 + w * 0.03, w * 0.163);
+  glyph(ctx, SUIT_PATHS[suit], w - w * 0.087 - w * 0.48, h - w * 0.087 - w * 0.48, w * 0.48);
 }

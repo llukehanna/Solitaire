@@ -103,10 +103,21 @@
 .face.suit-H { --suit-color: var(--suit-H); }
 .face.suit-D { --suit-color: var(--suit-D); }
 .face.suit-C { --suit-color: var(--suit-C); }
-.face-index { position: absolute; top: 6%; left: 8%; width: calc(var(--card-w) * 0.28); display: flex; flex-direction: column; align-items: center; gap: calc(var(--card-w) * 0.02); }
-.face-rank { font-size: calc(var(--card-w) * 0.28); letter-spacing: -0.04em; white-space: nowrap; }
-.face-suit { width: calc(var(--card-w) * 0.19); height: calc(var(--card-w) * 0.19); fill: currentColor; }
-.face-pip { position: absolute; right: 8%; bottom: 6%; width: calc(var(--card-w) * 0.47); height: calc(var(--card-w) * 0.47); fill: currentColor; }
+.face-index { position: absolute; top: calc(var(--card-w) * 0.076); left: calc(var(--card-w) * 0.076); width: calc(var(--card-w) * 0.26); display: flex; flex-direction: column; align-items: center; gap: calc(var(--card-w) * 0.03); }
+.face-rank { font-size: calc(var(--card-w) * 0.26); letter-spacing: -0.05em; white-space: nowrap; }
+.face-suit { width: calc(var(--card-w) * 0.163); height: calc(var(--card-w) * 0.163); fill: currentColor; }
+.face-pip { position: absolute; right: calc(var(--card-w) * 0.087); bottom: calc(var(--card-w) * 0.087); width: calc(var(--card-w) * 0.48); height: calc(var(--card-w) * 0.48); fill: currentColor; }
+/* Keyline and paper grain on the face. */
+.face::before { content: ''; position: absolute; inset: calc(var(--card-w) * 0.033); border-radius: calc(var(--card-w) * 0.043); border: 1px solid #0000000d; pointer-events: none; }
+.face::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.18;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .55 0 0 0 0 .5 0 0 0 0 .42 0 0 0 .6 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
 .card.dragging { transition: none; cursor: grabbing; }
 .card.dragging .card-front { box-shadow: var(--card-shadow-lift); transform: scale(1.03); }
 .card.hinted .card-front { animation: hint-pulse 800ms ease-in-out 3; }
