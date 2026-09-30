@@ -17,7 +17,7 @@ describe('animation', () => {
   it('uses the spec timings', () => {
     expect(FINISH_STEP_MS).toEqual({ normal: 110, fast: 70, off: 0 });
     expect(MOVE_MS).toEqual({ normal: 240, fast: 130, off: 0 });
-    expect(FLIP_MS).toEqual({ normal: 140, fast: 90, off: 0 });
+    expect(FLIP_MS).toEqual({ normal: 240, fast: 150, off: 0 });
   });
   it('reduced motion speeds animation up but never turns the finish off', () => {
     reduceMotion(true);

@@ -13,11 +13,13 @@ interface CardProps {
   focused: boolean;
   selected: boolean;
   stacked: boolean;
+  nopeKey: number;
+  pickable: boolean;
 }
 
 export const Card = memo(
   forwardRef<HTMLDivElement, CardProps>(function Card(p, ref) {
-    const cls = ['card', p.pos.faceUp && 'faceup', p.hinted && 'hinted', p.focused && 'focused', p.selected && 'selected', p.stacked && 'stacked']
+    const cls = ['card', p.pos.faceUp && 'faceup', p.hinted && 'hinted', p.focused && 'focused', p.selected && 'selected', p.stacked && 'stacked', p.nopeKey > 0 && 'nope', p.pickable && 'pickable']
       .filter(Boolean)
       .join(' ');
     return (
@@ -38,8 +40,10 @@ export const Card = memo(
           zIndex: p.moving ? 1000 + p.pos.z : p.pos.z,
         }}
       >
-        <div className="card-inner">
-          <div className="card-front">{p.pos.faceUp && <CardFront id={p.id} />}</div>
+        {/* A new key on each rejected tap remounts the inner element so the shake replays. */}
+        <div className="card-inner" key={p.nopeKey}>
+          {/* The face stays rendered while face down so a flip never shows a blank card. */}
+          <div className="card-front"><CardFront id={p.id} /></div>
           <div className="card-back" />
         </div>
       </div>

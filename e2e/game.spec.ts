@@ -300,3 +300,38 @@ for (const [width, height] of [[641, 900], [820, 1180], [1024, 768]] as const) {
     });
   }
 }
+
+function firstStuck(s: GameState): number | null {
+  for (let i = 0; i < 7; i++) {
+    const cards = s.tableau[i].cards;
+    const id = cards[cards.length - 1];
+    if (id !== undefined && destinationsFor(s, `T${i}` as PileId, 1).length === 0) return id;
+  }
+  return null;
+}
+
+test('tapping a card with no move shakes it and moves nothing', async ({ page }) => {
+  await freshGame(page, { seed: SEED, settings: { animation: 'normal' } });
+  const s = await getState(page);
+  const id = firstStuck(s);
+  expect(id).not.toBeNull();
+  const card = page.locator(`#card-${id}`);
+  const pile = (await card.getAttribute('data-pile'))!;
+  await clickCenter(page, `#card-${id}`);
+  await expect(card).toHaveClass(/\bnope\b/);
+  await expect(card).toHaveAttribute('data-pile', pile);
+  expect((await getSession(page)).turns.length).toBe(0);
+});
+
+test('a legal tap does not shake; face-up cards are pickable and face-down ones are not', async ({ page }) => {
+  await freshGame(page, { seed: SEED, settings: { animation: 'normal' } });
+  const s = await getState(page);
+  const col = s.tableau[6].cards;
+  await expect(page.locator(`#card-${col[col.length - 1]}`)).toHaveClass(/\bpickable\b/);
+  await expect(page.locator(`#card-${col[0]}`)).not.toHaveClass(/\bpickable\b/);
+  const tap = firstTap(s);
+  if (!tap) return;
+  await clickCenter(page, `#card-${tap.id}`);
+  await expect(page.locator(`#card-${tap.id}`)).toHaveAttribute('data-pile', tap.to);
+  await expect(page.locator(`#card-${tap.id}`)).not.toHaveClass(/\bnope\b/);
+});

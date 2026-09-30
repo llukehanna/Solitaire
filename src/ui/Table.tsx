@@ -1,12 +1,13 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { SUITS, type CardId } from '../engine/cards';
 import { canRecycle } from '../engine/rules';
-import type { GameState, Move } from '../engine/types';
+import type { GameState, Move, PileId } from '../engine/types';
 import type { Settings } from '../store/settings';
+import { effectiveAnimation } from './appClass';
 import { Card } from './Card';
 import { pileCards } from './focus';
 import { SUIT_PATHS } from './cards/suits';
-import { cardPositions, computeLayout, pickupIds, pileRect, slotRect, type CardPos, type Layout, type PileKey } from './layout';
+import { cardPositions, computeLayout, pickupAt, pickupIds, pileRect, slotRect, type CardPos, type Layout, type PileKey } from './layout';
 import type { Focus, Hint, Selection } from './types';
 import { useSize } from './useSize';
 import { useTableInput } from './useTableInput';
@@ -109,6 +110,18 @@ export function Table(p: TableProps) {
     });
   }
   const moving = useMovingCards(positions);
+  // "No move" shake: n bumps on every rejected tap so the same card can shake again.
+  const [nope, setNope] = useState<{ ids: Set<CardId>; n: number } | null>(null);
+  const nopeTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(nopeTimer.current), []);
+  const reject = (pickup?: { from: PileId; count: number }) => {
+    p.onReject?.();
+    if (!pickup || effectiveAnimation(p.settings) === 'off') return;
+    setNope((prev) => ({ ids: new Set(pickupIds(p.state, pickup)), n: (prev?.n ?? 0) + 1 }));
+    window.clearTimeout(nopeTimer.current);
+    nopeTimer.current = window.setTimeout(() => setNope(null), 400);
+  };
+
   const input = useTableInput({
     state: p.state,
     layout,
@@ -117,7 +130,7 @@ export function Table(p: TableProps) {
     locked: p.locked,
     onTurn: p.onTurn,
     onStockTap: p.onStockTap,
-    onReject: p.onReject,
+    onReject: reject,
   });
 
   const hinted = useMemo(
@@ -136,6 +149,14 @@ export function Table(p: TableProps) {
     }
     return out;
   }, [p.state]);
+
+  // Cards that can be picked up (face-up and movable), for the hover lift.
+  const pickableIds = useMemo(() => {
+    const out = new Set<CardId>();
+    if (p.locked || !positions) return out;
+    for (const [id, pos] of positions) if (pos.faceUp && pickupAt(p.state, pos)) out.add(id);
+    return out;
+  }, [positions, p.state, p.locked]);
 
   // When keyboard focus starts, move DOM focus to the table so aria-activedescendant is announced.
   useEffect(() => {
@@ -205,6 +226,8 @@ export function Table(p: TableProps) {
             focused={activeId === `card-${id}`}
             selected={selected.has(id)}
             stacked={stackedIds.has(id)}
+            nopeKey={nope?.ids.has(id) ? nope.n : 0}
+            pickable={pickableIds.has(id)}
           />
         ))}
       {hintTarget && (

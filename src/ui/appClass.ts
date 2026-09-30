@@ -5,7 +5,7 @@ export const prefersReducedMotion = (): boolean =>
 
 export const FINISH_STEP_MS: Record<AnimationSpeed, number> = { normal: 110, fast: 70, off: 0 };
 export const MOVE_MS: Record<AnimationSpeed, number> = { normal: 240, fast: 130, off: 0 };
-export const FLIP_MS: Record<AnimationSpeed, number> = { normal: 140, fast: 90, off: 0 };
+export const FLIP_MS: Record<AnimationSpeed, number> = { normal: 240, fast: 150, off: 0 };
 
 /** Reduced motion shortens animation rather than removing it, so the auto-finish stays watchable; only the setting turns it off. */
 export const effectiveAnimation = (s: Settings): AnimationSpeed =>
