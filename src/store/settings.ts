@@ -5,6 +5,8 @@ export type TableTheme = 'studio' | 'felt' | 'paper';
 export type CardBack = 'deco' | 'amber' | 'ink' | 'oxblood' | 'navy';
 export const TABLES: readonly TableTheme[] = ['studio', 'felt', 'paper'];
 export const CARD_BACKS: readonly CardBack[] = ['deco', 'amber', 'ink', 'oxblood', 'navy'];
+export type Cloth = 'fine' | 'fibre' | 'baize' | 'brushed' | 'casino';
+export const CLOTHS: readonly Cloth[] = ['fine', 'fibre', 'baize', 'brushed', 'casino'];
 export type AnimationSpeed = 'normal' | 'fast' | 'off';
 
 export interface Settings {
@@ -17,6 +19,7 @@ export interface Settings {
   fourColor: boolean;
   table: TableTheme;
   cardBack: CardBack;
+  cloth: Cloth;
   animation: AnimationSpeed;
 }
 
@@ -30,6 +33,7 @@ export const DEFAULT_SETTINGS: Settings = {
   fourColor: false,
   table: 'studio',
   cardBack: 'deco',
+  cloth: 'baize',
   animation: 'normal',
 };
 
@@ -64,6 +68,7 @@ export function parseSettings(raw: unknown, prefersLight = false): Settings {
     fourColor: bool(r.fourColor, d.fourColor),
     table: oneOf(r.table, TABLES, migrateTable(r, prefersLight)),
     cardBack,
+    cloth: oneOf(r.cloth, CLOTHS, d.cloth),
     animation: oneOf(r.animation, ['normal', 'fast', 'off'] as const, d.animation),
   };
 }

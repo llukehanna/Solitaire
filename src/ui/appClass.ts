@@ -21,6 +21,7 @@ export function appClassName(s: Settings): string {
   return [
     'app',
     `table-${s.table}`,
+    `cloth-${s.cloth}`,
     `back-${s.cardBack}`,
     `anim-${effectiveAnimation(s)}`,
     s.fourColor ? 'four-color' : '',

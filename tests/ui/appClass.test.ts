@@ -7,6 +7,12 @@ describe('appClassName', () => {
     const cls = appClassName({ ...DEFAULT_SETTINGS, table: 'paper', cardBack: 'ink', fourColor: true }).split(' ');
     expect(cls).toEqual(expect.arrayContaining(['app', 'table-paper', 'back-ink', 'four-color']));
   });
+  it.each(['fine', 'fibre', 'baize', 'brushed', 'casino'] as const)('carries cloth-%s', (cloth) => {
+    expect(appClassName({ ...DEFAULT_SETTINGS, cloth }).split(' ')).toContain(`cloth-${cloth}`);
+  });
+  it('always emits a cloth class, even off the felt table', () => {
+    expect(appClassName({ ...DEFAULT_SETTINGS, table: 'studio' }).split(' ')).toContain('cloth-baize');
+  });
 });
 
 const reduceMotion = (on: boolean) =>

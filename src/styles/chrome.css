@@ -171,3 +171,40 @@
 .field input { min-height: 38px; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--panel-line); background: color-mix(in srgb, var(--ink) 5%, transparent); color: var(--ink); font-family: var(--font-mono); font-size: 14px; }
 .field input:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
 .note.error { color: #d9573f; }
+
+/* Settings: segmented tabs, tile pickers, live preview. */
+.modal.settings-modal { max-width: min(480px, calc(100vw - 32px)); }
+.tabs { display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: color-mix(in srgb, var(--ink) 8%, transparent); border: 1px solid var(--panel-line); }
+.tab { flex: 1; min-height: 34px; padding: 6px 10px; border: 0; border-radius: 999px; background: transparent; color: var(--mute); cursor: pointer; font-size: 13.5px; font-weight: 500; transition: background-color 160ms var(--ease), color 160ms var(--ease); }
+.tab:hover { color: var(--ink); }
+.tab[aria-selected='true'] { background: var(--accent); color: var(--accent-ink); }
+.tab:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.tab-panel { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+.preview { display: flex; align-items: center; justify-content: center; gap: 14px; height: 120px; border-radius: 14px; border: 1px solid var(--panel-line); background: var(--glow), var(--bg); flex-shrink: 0; }
+.preview-vignette { position: absolute; inset: 0; box-shadow: inset 0 0 50px 10px #00000080; pointer-events: none; }
+.pv-card, .mini-card { position: relative; flex: none; width: var(--card-w); height: calc(var(--card-w) * 1.4); border-radius: calc(var(--card-w) * 0.055); }
+/* The real .card-front / .card-back, minus the flip: they sit flat and face-forward here. */
+.pv-card .card-back, .mini-card .card-back { transform: none; backface-visibility: visible; -webkit-backface-visibility: visible; }
+.pv-card .card-front { transition: none; }
+
+.tile-picker { min-width: 0; }
+.tile-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+.tile-head .label { margin-bottom: 0; }
+.tile-current { font-size: 13px; color: var(--ink); }
+.tiles { display: grid; gap: 8px; }
+.tile { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; padding: 6px 4px 7px; border-radius: 10px; border: 1px solid var(--panel-line); background: color-mix(in srgb, var(--ink) 4%, transparent); color: var(--ink); cursor: pointer; font: inherit; }
+.tile:hover { border-color: color-mix(in srgb, var(--ink) 40%, transparent); }
+.tile:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.tile[aria-checked='true'] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.tile-name { font-size: 11.5px; line-height: 1.1; color: var(--mute); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tile[aria-checked='true'] .tile-name { color: var(--ink); }
+.thumb { display: block; width: 100%; border-radius: 6px; }
+.thumb-table { height: 44px; background: var(--glow), var(--bg); border: 1px solid #ffffff1a; }
+.table-paper.thumb-table { border-color: #00000026; }
+.thumb-back { display: grid; place-items: center; height: 44px; }
+.mini-card .card-back { box-shadow: 0 0 0 1px #ffffff1f; }
+/* The Deco medallion's rings are pixel-sized, so shrink them with the card. */
+.thumb-back.back-deco .card-back::before { box-shadow: 0 0 0 2px #1d160f, 0 0 0 3px #f2c14e55; }
+.thumb-suits { display: grid; grid-template-columns: repeat(4, 1fr); align-items: center; gap: 2px; height: 44px; padding: 0 8px; background: var(--card-face); border: 1px solid #0000001f; }
+.thumb-suits svg { width: 100%; aspect-ratio: 1; }

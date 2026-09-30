@@ -12,5 +12,12 @@ for (const table of ['studio', 'felt', 'paper'] as const) {
       document.querySelector('dialog[open] .modal-card')?.getAnimations().every((a) => a.playState === 'finished'),
     );
     await page.screenshot({ path: `test-results/visual/${info.project.name}-${table}-stats.png` });
+    await page.keyboard.press('Escape');
+    await page.locator('dialog[open]').waitFor({ state: 'detached' });
+    await page.getByRole('button', { name: 'Settings' }).click();
+    await page.waitForFunction(() =>
+      document.querySelector('dialog[open] .modal-card')?.getAnimations().every((a) => a.playState === 'finished'),
+    );
+    await page.screenshot({ path: `test-results/visual/${info.project.name}-${table}-settings.png` });
   });
 }
