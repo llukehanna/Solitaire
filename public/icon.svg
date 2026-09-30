@@ -1,8 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#12603a"/>
-  <g transform="rotate(-10 256 256)">
-    <rect x="150" y="104" width="212" height="296" rx="24" fill="#fffdf8" stroke="#d9d3c5" stroke-width="6"/>
-    <text x="176" y="176" font-family="Georgia, serif" font-size="64" font-weight="700" fill="#1a1a1a">A</text>
-    <path transform="translate(206 222) scale(1)" fill="#1a1a1a" d="M50 2C62 24 98 42 98 66C98 80 87 89 75 89C66 89 58 85 54 78C55 88 59 95 67 100H33C41 95 45 88 46 78C42 85 34 89 25 89C13 89 2 80 2 66C2 42 38 24 50 2Z"/>
+  <defs>
+    <radialGradient id="leather" cx="50%" cy="15%" r="95%">
+      <stop offset="0" stop-color="#4a3824"/>
+      <stop offset=".55" stop-color="#1c1612"/>
+      <stop offset="1" stop-color="#0f0d0b"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7d98a"/>
+      <stop offset=".5" stop-color="#e2b04a"/>
+      <stop offset="1" stop-color="#a87a1f"/>
+    </linearGradient>
+    <filter id="grain" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency=".8" numOctaves="4" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer><feFuncA type="linear" slope=".35"/></feComponentTransfer>
+    </filter>
+    <filter id="lift" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000" flood-opacity=".5"/>
+    </filter>
+    <clipPath id="tile"><rect width="512" height="512" rx="114"/></clipPath>
+  </defs>
+  <g clip-path="url(#tile)">
+    <rect width="512" height="512" fill="url(#leather)"/>
+    <rect width="512" height="512" filter="url(#grain)" opacity=".5"/>
+    <!-- Stitched rail, as on the Studio table -->
+    <rect x="34" y="34" width="444" height="444" rx="70" fill="none" stroke="#f2c14e55" stroke-width="3" stroke-dasharray="10 9"/>
+    <path filter="url(#lift)" fill="url(#gold)" transform="translate(141 131) scale(2.3)" d="M50 2C62 24 98 42 98 66C98 80 87 89 75 89C66 89 58 85 54 78C55 88 59 95 67 100H33C41 95 45 88 46 78C42 85 34 89 25 89C13 89 2 80 2 66C2 42 38 24 50 2Z"/>
   </g>
 </svg>

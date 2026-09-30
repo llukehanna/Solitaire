@@ -12,7 +12,8 @@
     "test:deals": "FULL_DEALS=1 vitest run tests/deals",
     "e2e": "playwright test",
     "deals": "tsx scripts/build-deals.ts",
-    "bench": "tsx scripts/bench-solver.ts"
+    "bench": "tsx scripts/bench-solver.ts",
+    "icons": "pwa-assets-generator && tsx scripts/icons.ts"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
