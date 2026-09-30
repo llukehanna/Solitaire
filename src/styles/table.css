@@ -116,9 +116,10 @@
   border: 1px solid var(--back-frame);
   background: var(--back-pattern);
 }
-/* Deco back: a diamond medallion over the lattice. */
-.back-deco .card-back::before {
+/* Deco back: a diamond medallion over the lattice. --back-medallion is inherited, so the nearest .back-* wins. */
+.card-back::before {
   content: '';
+  display: var(--back-medallion, none);
   position: absolute;
   z-index: 1;
   left: 50%;
