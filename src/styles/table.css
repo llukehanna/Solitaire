@@ -23,6 +23,7 @@
 /* Studio: a stitched rail around the play area. Felt: a vignette. */
 .table-studio .table-wrap::before { inset: 10px; border: 1px dashed #f2c14e2e; border-radius: 12px; }
 .table-felt .table-wrap::before { inset: 0; box-shadow: inset 0 0 120px 30px #00000080; }
+@media (max-width: 640px) { .table-studio .table-wrap::before { display: none; } }
 .table-studio .slot { background: linear-gradient(180deg, #ffffff08, #ffffff02); box-shadow: inset 0 1px 0 #ffffff0d; }
 .table-felt .slot { box-shadow: inset 0 2px 8px #00000055; }
 .table {
