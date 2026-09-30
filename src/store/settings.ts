@@ -51,6 +51,8 @@ function migrateTable(r: Record<string, unknown>, prefersLight: boolean): TableT
 export function parseSettings(raw: unknown, prefersLight = false): Settings {
   const r = asRecord(raw);
   const d = DEFAULT_SETTINGS;
+  // v1.1 persisted amber as the default for all players on first load; treat it as unchosen.
+  const cardBack = r.autoMove === undefined && r.cardBack === 'amber' ? 'deco' : oneOf(r.cardBack, CARD_BACKS, d.cardBack);
   return {
     drawCount: oneOf(r.drawCount, [1, 3] as const, d.drawCount),
     scoring: oneOf(r.scoring, ['standard', 'vegas', 'none'] as const, d.scoring),
@@ -61,7 +63,7 @@ export function parseSettings(raw: unknown, prefersLight = false): Settings {
     leftHanded: bool(r.leftHanded, d.leftHanded),
     fourColor: bool(r.fourColor, d.fourColor),
     table: oneOf(r.table, TABLES, migrateTable(r, prefersLight)),
-    cardBack: oneOf(r.cardBack, CARD_BACKS, d.cardBack),
+    cardBack,
     animation: oneOf(r.animation, ['normal', 'fast', 'off'] as const, d.animation),
   };
 }
@@ -73,6 +75,7 @@ const prefersLight = () => typeof matchMedia === 'function' && matchMedia('(pref
 export function loadSettings(): Settings {
   const raw = readJSON(KEYS.settings);
   const s = parseSettings(raw, prefersLight());
-  if (raw !== null && asRecord(raw).table === undefined) saveSettings(s); // persist the one-time v1 migration
+  const r = asRecord(raw);
+  if (raw !== null && (r.table === undefined || r.autoMove === undefined)) saveSettings(s); // persist the one-time v1/v1.1 migration
   return s;
 }

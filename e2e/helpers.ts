@@ -12,7 +12,7 @@ declare global {
 export const BANK1 = JSON.parse(readFileSync('src/deals/bank-draw1.json', 'utf8')) as { entries: [number, number][] };
 export const SEED = BANK1.entries[0][0];
 
-/** Clean storage, deterministic settings (no animation, no sound, no auto-play), optional fixed deal. */
+/** Clean storage, deterministic settings (no animation, no sound, auto-move off), optional fixed deal. */
 export async function freshGame(page: Page, opts: { seed?: number; drawCount?: DrawCount; settings?: Record<string, unknown> } = {}) {
   // Seed storage before the app's first script runs, once per tab (sessionStorage survives reloads). Clearing from
   // page.evaluate() after load is not enough: the running app re-saves its game on pagehide, so the previous

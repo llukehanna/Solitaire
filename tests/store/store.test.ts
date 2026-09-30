@@ -40,7 +40,21 @@ describe('settings', () => {
     expect(parseSettings({ autoPlay: true })).not.toHaveProperty('autoPlay');
   });
   it.each(['deco', 'amber', 'ink', 'oxblood', 'navy'])('accepts the %s card back', (cardBack) => {
-    expect(parseSettings({ cardBack }).cardBack).toBe(cardBack);
+    expect(parseSettings({ cardBack, autoMove: false }).cardBack).toBe(cardBack);
+  });
+  it('v1.1 amber default is migrated to deco (pre-v1.2 record without autoMove)', () => {
+    expect(parseSettings({ cardBack: 'amber' }).cardBack).toBe('deco');
+  });
+  it('explicit amber choice in v1.2 is kept', () => {
+    expect(parseSettings({ cardBack: 'amber', autoMove: false }).cardBack).toBe('amber');
+  });
+  it('other card backs are kept as-is from v1.1', () => {
+    expect(parseSettings({ cardBack: 'navy' }).cardBack).toBe('navy');
+  });
+  it('persists the v1.1 card-back migration on load', () => {
+    writeJSON(KEYS.settings, { table: 'studio', cardBack: 'amber' });
+    expect(loadSettings().cardBack).toBe('deco');
+    expect(readJSON(KEYS.settings)).toMatchObject({ table: 'studio', cardBack: 'deco', autoMove: false });
   });
   it.each([
     [{ theme: 'classic' }, false, 'felt'],
