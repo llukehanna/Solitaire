@@ -64,6 +64,20 @@
   border: 1px solid var(--back-frame);
   background: var(--back-pattern);
 }
+/* Deco back: a diamond medallion over the lattice. */
+.back-deco .card-back::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--card-w) * 0.33);
+  height: calc(var(--card-w) * 0.33);
+  transform: translate(-50%, -50%) rotate(45deg);
+  border: 1px solid #f2c14eaa;
+  background: #1d160f;
+  box-shadow: 0 0 0 4px #1d160f, 0 0 0 5px #f2c14e55;
+}
 .face { position: absolute; inset: 0; color: var(--suit-color); font-family: var(--font-ui, system-ui, sans-serif); font-weight: 600; line-height: 1; }
 .face.suit-S { --suit-color: var(--suit-S); }
 .face.suit-H { --suit-color: var(--suit-H); }

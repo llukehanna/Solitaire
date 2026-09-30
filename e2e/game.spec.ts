@@ -276,6 +276,19 @@ test('imports solitaired stats once', async ({ page }) => {
   await expect(dialog.getByRole('button', { name: 'Import from solitaired.com' })).toHaveCount(0);
 });
 
+test('auto-move starts off even for players who had auto-play on', async ({ page }) => {
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem('e2e-init')) return;
+    sessionStorage.setItem('e2e-init', '1');
+    localStorage.clear();
+    localStorage.setItem('sol.v1.settings', JSON.stringify({ animation: 'off', sound: false, autoPlay: true }));
+  });
+  await page.goto('/?e2e=1');
+  await page.waitForFunction(() => !!window.__sol);
+  await page.getByRole('button', { name: 'Settings' }).click();
+  await expect(page.getByRole('checkbox', { name: /Auto-move safe cards to foundations/ })).not.toBeChecked();
+});
+
 for (const [width, height] of [[641, 900], [820, 1180], [1024, 768]] as const) {
   for (const scoring of ['standard', 'vegas'] as const) {
     test(`the toolbar stays one row at ${width}x${height} with ${scoring} scoring`, async ({ page }, info) => {

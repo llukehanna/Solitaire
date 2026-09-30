@@ -2,16 +2,16 @@ import type { DrawCount, Scoring } from '../engine/types';
 import { KEYS, asRecord, readJSON, writeJSON } from './storage';
 
 export type TableTheme = 'studio' | 'felt' | 'paper';
-export type CardBack = 'amber' | 'ink' | 'oxblood' | 'navy';
+export type CardBack = 'deco' | 'amber' | 'ink' | 'oxblood' | 'navy';
 export const TABLES: readonly TableTheme[] = ['studio', 'felt', 'paper'];
-export const CARD_BACKS: readonly CardBack[] = ['amber', 'ink', 'oxblood', 'navy'];
+export const CARD_BACKS: readonly CardBack[] = ['deco', 'amber', 'ink', 'oxblood', 'navy'];
 export type AnimationSpeed = 'normal' | 'fast' | 'off';
 
 export interface Settings {
   drawCount: DrawCount;
   scoring: Scoring;
   cumulativeVegas: boolean;
-  autoPlay: boolean;
+  autoMove: boolean;
   sound: boolean;
   leftHanded: boolean;
   fourColor: boolean;
@@ -24,12 +24,12 @@ export const DEFAULT_SETTINGS: Settings = {
   drawCount: 1,
   scoring: 'standard',
   cumulativeVegas: false,
-  autoPlay: true,
+  autoMove: false,
   sound: true,
   leftHanded: false,
   fourColor: false,
   table: 'studio',
-  cardBack: 'amber',
+  cardBack: 'deco',
   animation: 'normal',
 };
 
@@ -55,7 +55,8 @@ export function parseSettings(raw: unknown, prefersLight = false): Settings {
     drawCount: oneOf(r.drawCount, [1, 3] as const, d.drawCount),
     scoring: oneOf(r.scoring, ['standard', 'vegas', 'none'] as const, d.scoring),
     cumulativeVegas: bool(r.cumulativeVegas, d.cumulativeVegas),
-    autoPlay: bool(r.autoPlay, d.autoPlay),
+    // v1.1's `autoPlay` (default on) is deliberately ignored: from v1.2 nothing moves mid-game unless opted in.
+    autoMove: bool(r.autoMove, d.autoMove),
     sound: bool(r.sound, d.sound),
     leftHanded: bool(r.leftHanded, d.leftHanded),
     fourColor: bool(r.fourColor, d.fourColor),
