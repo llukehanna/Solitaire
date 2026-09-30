@@ -96,7 +96,7 @@ The three-table switch stays. Each table gains texture and depth. The textures a
 - **Exceptions:** there is no shake for rejected drags (those snap back) or keyboard rejects, and none when Animation is Off. Reduced motion still shakes, since the motion is tiny.
 - **Repeats:** tapping the same card again replays the shake.
 
-**Hover lift** (pointer devices only, `@media (hover: hover)`): a face-up card that can be picked up (per `pickupFor`) lifts `translateY(-2px)` on its `.card-inner` over 160ms, and its shadow deepens slightly. It is off while dragging and while locked.
+**Hover lift** (pointer devices only, `@media (hover: hover)`): a face-up card that can be picked up (per `pickupAt` in `src/ui/layout.ts`) lifts `translateY(-2px)` on its `.card-inner` over 160ms, and its shadow deepens slightly. It is off while dragging and while locked.
 
 ## 5. No automatic moves mid-game
 
