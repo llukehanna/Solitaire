@@ -12,7 +12,7 @@ interface Args {
   locked: boolean;
   onTurn(moves: Move[]): void;
   onStockTap(): void;
-  onReject?(): void;
+  onReject?(pickup?: { from: PileId; count: number }): void;
 }
 
 interface Press {
@@ -159,7 +159,7 @@ export function useTableInput(args: Args) {
     lastTap.current = { x: e.clientX, y: e.clientY, t: now };
     const [to] = destinationsFor(state, p.pickup.from, p.pickup.count);
     if (to) onTurn([{ type: 'move', from: p.pickup.from, to, count: p.pickup.count }]);
-    else onReject?.();
+    else onReject?.(p.pickup);
   }
 
   return {
