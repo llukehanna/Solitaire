@@ -49,10 +49,20 @@ test('dialogs open as bottom sheets and close with a downward swipe', async ({ p
   expect(Math.abs(card.y + card.height - vh)).toBeLessThanOrEqual(1);
   expect(card.width).toBeGreaterThanOrEqual(page.viewportSize()!.width - 1);
 
+  const settled = () =>
+    page.waitForFunction(() => {
+      const c = document.querySelector('dialog[open] .modal-card');
+      return !!c && getComputedStyle(c).transform === 'none';
+    });
+  const handleCentre = async () => {
+    const h = (await page.locator('dialog[open] .sheet-handle').boundingBox())!;
+    return { x: h.x + h.width / 2, y: h.y + h.height / 2 };
+  };
+  const translateY = () =>
+    page.locator('dialog[open] .modal-card').evaluate((el) => new DOMMatrixReadOnly(getComputedStyle(el).transform).m42);
+
   // A short, slow drag springs back.
-  const handle = (await page.locator('dialog[open] .sheet-handle').boundingBox())!;
-  const x = handle.x + handle.width / 2;
-  const y = handle.y + handle.height / 2;
+  let { x, y } = await handleCentre();
   await page.mouse.move(x, y);
   await page.mouse.down();
   await page.mouse.move(x, y + 30, { steps: 10 });
@@ -60,13 +70,40 @@ test('dialogs open as bottom sheets and close with a downward swipe', async ({ p
   await page.mouse.move(x, y + 31);
   await page.mouse.up();
   await expect(dialog).toBeVisible();
+  await settled();
+  await expect
+    .poll(async () => {
+      const b = (await page.locator('dialog[open] .modal-card').boundingBox())!;
+      return Math.abs(b.y + b.height - vh);
+    })
+    .toBeLessThanOrEqual(1);
 
-  // A long drag closes it.
+  // A long drag follows the finger, then closes it (by the swipe, not the backdrop).
+  ({ x, y } = await handleCentre());
   await page.mouse.move(x, y);
   await page.mouse.down();
-  await page.mouse.move(x, y + 200, { steps: 12 });
+  await page.mouse.move(x, y + 100, { steps: 8 });
+  expect(Math.abs((await translateY()) - 100)).toBeLessThanOrEqual(5);
+  await page.mouse.move(x, y + 200, { steps: 8 });
   await page.mouse.up();
   await expect(dialog).toBeHidden();
+});
+
+test('a drag that is held still before release does not dismiss on stale velocity', async ({ page }) => {
+  await freshGame(page, { seed: SEED });
+  await openSettings(page);
+  const dialog = page.getByRole('dialog', { name: 'Settings' });
+  await expect(dialog).toBeVisible();
+  await page.waitForFunction(() => document.querySelector('dialog[open] .modal-card')?.getAnimations().every((a) => a.playState === 'finished'));
+  const h = (await page.locator('dialog[open] .sheet-handle').boundingBox())!;
+  const x = h.x + h.width / 2;
+  const y = h.y + h.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x, y + 40, { steps: 2 });
+  await page.waitForTimeout(400);
+  await page.mouse.up();
+  await expect(dialog).toBeVisible();
 });
 
 test('phones get a readout strip on top and a thumb bar below the cards', async ({ page }) => {
