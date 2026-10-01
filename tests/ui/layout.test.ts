@@ -54,6 +54,48 @@ describe('cardPositions', () => {
   });
 });
 
+describe('computeLayout on phones', () => {
+  it.each([
+    [375, 650, 50],
+    [390, 680, 52],
+    [412, 700, 55],
+  ])('runs cards edge to edge at %ix%i (cardW %i)', (w, h, cardW) => {
+    const L = computeLayout(w, h, false, true);
+    expect(L.cardW).toBe(cardW);
+    expect(L.gap).toBe(3);
+    expect(7 * L.cardW + 6 * L.gap).toBeLessThanOrEqual(w);
+    expect(L.tableau[0].x).toBeGreaterThanOrEqual(3);
+    expect(L.tableauBottom).toBeLessThanOrEqual(h);
+    expect(L.cardH).toBe(Math.round(L.cardW * 1.4));
+  });
+  it('fans face-up cards at 0.40 of a card height and face-down at 0.10', () => {
+    const L = computeLayout(375, 650, false, true);
+    const s = makeState({ cols: [['KS QH', 1]] });
+    expect(columnOffsets(L, s.tableau[0])).toEqual({ down: L.cardH * 0.1, up: L.cardH * 0.4 });
+  });
+  it('squeezes a 6-down, 13-up column to stay above the bottom', () => {
+    const L = computeLayout(375, 650, false, true);
+    const s = makeState({ cols: [['2C 3C 4C 5C 6C 7C KS QH JS TH 9S 8H 7S 6H 5S 4H 3S 2H AS', 6]] });
+    const pos = cardPositions(s, L);
+    const top = s.tableau[0].cards[s.tableau[0].cards.length - 1];
+    expect(pos.get(top)!.y + L.cardH).toBeLessThanOrEqual(L.tableauBottom + 0.5);
+  });
+  it.each([false, true])('keeps the draw-3 waste fan clear of the next slot (left-handed: %s)', (leftHanded) => {
+    const L = computeLayout(375, 650, leftHanded, true);
+    expect(L.wasteFan).toBe(Math.round(L.cardW * 0.45));
+    const s = makeState({ drawCount: 3, waste: cards('2C 3C 4C') });
+    const pos = cardPositions(s, L);
+    const lastRight = pos.get(s.waste[2])!.x + L.cardW;
+    expect(lastRight).toBeLessThanOrEqual(L.waste.x + 2 * (L.cardW + L.gap));
+  });
+  it('leaves the desktop layout untouched without the phone flag', () => {
+    const L = computeLayout(1280, 740, false);
+    expect({ cardW: L.cardW, gap: L.gap, wasteFan: L.wasteFan, downStep: L.downStep, upStep: L.upStep, x0: L.tableau[0].x }).toEqual({
+      cardW: 149, gap: 21, wasteFan: 33, downStep: 0.12, upStep: 0.26, x0: 56,
+    });
+  });
+});
+
 describe('drop targets and pickups', () => {
   const s = makeState({ cols: [['9C 8H 7S', 1], ['9S', 0]], waste: cards('KD') });
   const L = computeLayout(1000, 800, false);
