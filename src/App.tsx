@@ -7,6 +7,8 @@ import { NoMovesDialog } from './ui/dialogs/NoMovesDialog';
 import { ResultDialog } from './ui/dialogs/ResultDialog';
 import { SettingsDialog } from './ui/dialogs/SettingsDialog';
 import { StatsDialog } from './ui/dialogs/StatsDialog';
+import { buzz } from './ui/haptics';
+import { InstallHint } from './ui/InstallBanner';
 import { playSound } from './ui/sound';
 import { Readout } from './ui/Readout';
 import { Table } from './ui/Table';
@@ -41,6 +43,7 @@ export default function App() {
   const anyDialog = dialog !== null || stuck !== null || showResult;
   const reject = () => {
     if (settings.sound) playSound('nope');
+    buzz('reject', settings.sound);
     setAnnouncement("Can't move there.");
   };
 
@@ -70,6 +73,7 @@ export default function App() {
     if (before.status !== 'won' && session.status === 'won') {
       setAnnouncement('You won!');
       if (settings.sound) playSound('win');
+      buzz('win', settings.sound);
       // Let the last auto-finish card land before the cascade or result dialog covers the table.
       const land = MOVE_MS[effectiveAnimation(settings)];
       window.clearTimeout(celebrateTimer.current);
@@ -162,6 +166,7 @@ export default function App() {
         onHint={solver.requestHint}
         onMore={() => setDialog('more')}
       />
+      <InstallHint gamesPlayed={stats.draw1.played + stats.draw3.played} />
       <div className="sr-only" aria-live="polite" aria-atomic="true">
         {announcement.text}
         {announcement.n % 2 ? '' : '\u00a0'}
