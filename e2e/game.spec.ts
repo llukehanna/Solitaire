@@ -4,7 +4,7 @@ import { applyMove } from '../src/engine/apply';
 import { destinationsFor, legalMoves } from '../src/engine/movegen';
 import type { GameState, Move, PileId } from '../src/engine/types';
 import { solve } from '../src/solver/solve';
-import { clickCenter, clickStock, freshGame, getSession, getState, pileCount, SEED } from './helpers';
+import { clickCenter, clickStock, freshGame, getSession, getState, isPhone, newGameFromMenu, openSettings, openStats, pickTable, pileCount, SEED } from './helpers';
 
 function firstTap(s: GameState): { id: number; to: PileId } | null {
   const sources: [PileId, number | undefined][] = [['W', s.waste[s.waste.length - 1]]];
@@ -154,8 +154,7 @@ test('new games never repeat a recent seed', async ({ page }) => {
   await freshGame(page);
   const seeds = [(await getSession(page)).seed];
   for (let i = 0; i < 5; i++) {
-    await page.getByLabel('Game menu').click();
-    await page.getByRole('menuitem', { name: 'New game' }).click();
+    await newGameFromMenu(page);
     await expect.poll(async () => (await getSession(page)).seed).not.toBe(seeds[seeds.length - 1]);
     seeds.push((await getSession(page)).seed);
   }
@@ -204,11 +203,13 @@ test('Space draws from the stock, even right after clicking a toolbar button', a
   await expect.poll(() => pileCount(page, 'W')).toBe(0);
   await page.keyboard.press(' ');
   await expect.poll(() => pileCount(page, 'W')).toBe(1); // drew again, did not re-press Undo
-  // Also test that Space works after clicking a table swatch
-  await page.getByRole('radio', { name: 'Felt table' }).click();
-  await expect.poll(() => pileCount(page, 'W')).toBe(1);
-  await page.keyboard.press(' ');
-  await expect.poll(() => pileCount(page, 'W')).toBe(2); // drew again after swatch click
+  // Also test that Space works after clicking a table swatch (desktop only: phones have no swatches).
+  if (!(await isPhone(page))) {
+    await page.getByRole('radio', { name: 'Felt table' }).click();
+    await expect.poll(() => pileCount(page, 'W')).toBe(1);
+    await page.keyboard.press(' ');
+    await expect.poll(() => pileCount(page, 'W')).toBe(2); // drew again after swatch click
+  }
 });
 
 test('layout fits the viewport without scrolling', async ({ page }) => {
@@ -242,7 +243,7 @@ test('a mid-game rules change shows its "next game" note inside the settings dia
   await freshGame(page, { seed: SEED });
   await clickStock(page);
   await expect.poll(() => pileCount(page, 'W')).toBe(1);
-  await page.getByRole('button', { name: 'Settings' }).click();
+  await openSettings(page);
   const dialog = page.getByRole('dialog', { name: 'Settings' });
   await dialog.getByRole('tab', { name: 'Game' }).click();
   await expect(dialog.getByText('Applies to your next game.')).toHaveCount(0);
@@ -250,13 +251,14 @@ test('a mid-game rules change shows its "next game" note inside the settings dia
   await expect(dialog.getByText('Applies to your next game.')).toBeVisible();
   expect((await getSession(page)).drawCount).toBe(1); // the current game is untouched
   await dialog.getByRole('button', { name: 'Done' }).click();
-  await page.getByRole('button', { name: 'Settings' }).click();
+  await openSettings(page);
   const reopened = page.getByRole('dialog', { name: 'Settings' });
   await reopened.getByRole('tab', { name: 'Game' }).click();
   await expect(reopened.getByText('Applies to your next game.')).toHaveCount(0);
 });
 
-test('the table switch changes the look and persists across reload', async ({ page }) => {
+test('the table switch changes the look and persists across reload', async ({ page }, info) => {
+  test.skip(info.project.name === 'mobile', 'phones pick the table in Settings; covered by the Cloth test');
   await freshGame(page, { seed: SEED });
   await expect(page.locator('.app')).toHaveClass(/table-studio/);
   await page.getByRole('radio', { name: 'Paper table' }).click();
@@ -269,7 +271,7 @@ test('the table switch changes the look and persists across reload', async ({ pa
 
 test('imports solitaired stats once', async ({ page }) => {
   await freshGame(page, { seed: SEED });
-  await page.getByRole('button', { name: 'Stats' }).click();
+  await openStats(page);
   const dialog = page.getByRole('dialog', { name: 'Statistics' });
   await dialog.getByRole('button', { name: 'Import from solitaired.com' }).click();
   await expect(dialog.getByLabel('Games played')).toHaveValue('5561');
@@ -288,7 +290,7 @@ test('auto-move starts off even for players who had auto-play on', async ({ page
   });
   await page.goto('/?e2e=1');
   await page.waitForFunction(() => !!window.__sol);
-  await page.getByRole('button', { name: 'Settings' }).click();
+  await openSettings(page);
   await page.getByRole('tab', { name: 'Game' }).click();
   await expect(page.getByRole('checkbox', { name: /Auto-move safe cards to foundations/ })).not.toBeChecked();
 });
@@ -322,7 +324,7 @@ test('a legal tap makes exactly one move even with v1.1 autoPlay on, and the v1.
 
 test('the chosen card back persists across a reload', async ({ page }) => {
   await freshGame(page);
-  await page.getByRole('button', { name: 'Settings' }).click();
+  await openSettings(page);
   await page.getByRole('radiogroup', { name: 'Card back' }).getByRole('radio', { name: 'Navy' }).click();
   await expect(page.locator('.app')).toHaveClass(/\bback-navy\b/);
   await page.reload();
@@ -334,7 +336,7 @@ const settingsDialog = (page: Page) => page.getByRole('dialog', { name: 'Setting
 
 test('Settings opens on Appearance with a live preview', async ({ page }) => {
   await freshGame(page);
-  await page.getByRole('button', { name: 'Settings' }).click();
+  await openSettings(page);
   const dialog = settingsDialog(page);
   await expect(dialog.getByRole('tab', { name: 'Appearance' })).toHaveAttribute('aria-selected', 'true');
   await expect(dialog.getByRole('tabpanel')).toBeVisible();
@@ -342,13 +344,13 @@ test('Settings opens on Appearance with a live preview', async ({ page }) => {
   // Leaving and reopening resets to Appearance.
   await dialog.getByRole('tab', { name: 'Game' }).click();
   await dialog.getByRole('button', { name: 'Done' }).click();
-  await page.getByRole('button', { name: 'Settings' }).click();
+  await openSettings(page);
   await expect(settingsDialog(page).getByRole('tab', { name: 'Appearance' })).toHaveAttribute('aria-selected', 'true');
 });
 
 test('tabs move with the arrow keys', async ({ page }) => {
   await freshGame(page);
-  await page.getByRole('button', { name: 'Settings' }).click();
+  await openSettings(page);
   const dialog = settingsDialog(page);
   await dialog.getByRole('tab', { name: 'Appearance' }).focus();
   await page.keyboard.press('ArrowRight');
@@ -362,7 +364,7 @@ test('tabs move with the arrow keys', async ({ page }) => {
 
 test('the Cloth group shows only on Felt; the chosen cloth persists across a reload', async ({ page }) => {
   await freshGame(page);
-  await page.getByRole('button', { name: 'Settings' }).click();
+  await openSettings(page);
   const dialog = settingsDialog(page);
   await expect(dialog.getByRole('radiogroup', { name: 'Cloth' })).toHaveCount(0);
   await dialog.getByRole('radiogroup', { name: 'Table' }).getByRole('radio', { name: 'Felt' }).click();
@@ -375,7 +377,7 @@ test('the Cloth group shows only on Felt; the chosen cloth persists across a rel
   await page.reload();
   await page.waitForFunction(() => !!window.__sol);
   await expect(page.locator('.app')).toHaveClass(/\bcloth-casino\b/);
-  await page.getByRole('button', { name: 'Settings' }).click();
+  await openSettings(page);
   await expect(settingsDialog(page).getByRole('radiogroup', { name: 'Cloth' }).getByRole('radio', { name: 'Casino' })).toHaveAttribute('aria-checked', 'true');
   await settingsDialog(page).getByRole('radiogroup', { name: 'Table' }).getByRole('radio', { name: 'Studio' }).click();
   await expect(settingsDialog(page).getByRole('radiogroup', { name: 'Cloth' })).toHaveCount(0);
@@ -383,7 +385,7 @@ test('the Cloth group shows only on Felt; the chosen cloth persists across a rel
 
 test('suit colours pick two- or four-colour', async ({ page }) => {
   await freshGame(page);
-  await page.getByRole('button', { name: 'Settings' }).click();
+  await openSettings(page);
   const suits = settingsDialog(page).getByRole('radiogroup', { name: 'Suit colours' });
   await expect(suits.getByRole('radio', { name: 'Two-colour' })).toHaveAttribute('aria-checked', 'true');
   await suits.getByRole('radio', { name: 'Four-colour' }).click();
@@ -394,7 +396,7 @@ test('suit colours pick two- or four-colour', async ({ page }) => {
 
 test('the Game and Controls tabs hold their settings', async ({ page }) => {
   await freshGame(page);
-  await page.getByRole('button', { name: 'Settings' }).click();
+  await openSettings(page);
   const dialog = settingsDialog(page);
   await dialog.getByRole('tab', { name: 'Game' }).click();
   await expect(dialog.getByRole('button', { name: 'Draw 3' })).toBeVisible();
@@ -406,7 +408,7 @@ test('the Game and Controls tabs hold their settings', async ({ page }) => {
 
 test('the Settings dialog does not scroll sideways on any tab', async ({ page }) => {
   await freshGame(page, { settings: { table: 'felt' } });
-  await page.getByRole('button', { name: 'Settings' }).click();
+  await openSettings(page);
   const dialog = settingsDialog(page);
   for (const tab of ['Appearance', 'Game', 'Controls']) {
     await dialog.getByRole('tab', { name: tab }).click();
@@ -417,7 +419,7 @@ test('the Settings dialog does not scroll sideways on any tab', async ({ page })
 
 test('only the Deco card back shows the medallion, whatever back is current', async ({ page }) => {
   await freshGame(page, { settings: { cardBack: 'navy' } });
-  await page.getByRole('button', { name: 'Settings' }).click();
+  await openSettings(page);
   const backs = settingsDialog(page).getByRole('radiogroup', { name: 'Card back' });
   const medallion = (name: string) =>
     backs.getByRole('radio', { name }).locator('.card-back').evaluate((el) => getComputedStyle(el, '::before').display);
@@ -551,7 +553,7 @@ test('the page behind the app matches the table, so iPhone safe areas are never 
   await freshGame(page, { seed: SEED, settings: { table: 'studio' } });
   const pageBg = () => page.evaluate(() => [getComputedStyle(document.documentElement).backgroundColor, getComputedStyle(document.body).backgroundColor]);
   expect(await pageBg()).toEqual(['rgb(15, 13, 11)', 'rgb(15, 13, 11)']);
-  await page.getByRole('radio', { name: 'Paper table' }).click();
+  await pickTable(page, 'Paper');
   expect(await pageBg()).toEqual(['rgb(233, 230, 224)', 'rgb(233, 230, 224)']);
 });
 

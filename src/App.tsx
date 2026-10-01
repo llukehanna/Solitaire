@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { FLIP_MS, MOVE_MS, TABLE_BASE, appClassName, celebrationAllowed, effectiveAnimation } from './ui/appClass';
 import { describeHint, describeTurn } from './ui/announce';
+import { GameSheet } from './ui/dialogs/GameSheet';
+import { MoreSheet } from './ui/dialogs/MoreSheet';
 import { NoMovesDialog } from './ui/dialogs/NoMovesDialog';
 import { ResultDialog } from './ui/dialogs/ResultDialog';
 import { SettingsDialog } from './ui/dialogs/SettingsDialog';
@@ -9,13 +11,14 @@ import { playSound } from './ui/sound';
 import { Readout } from './ui/Readout';
 import { Table } from './ui/Table';
 import { Toast, useToast } from './ui/Toast';
+import { ThumbBar } from './ui/ThumbBar';
 import { Toolbar } from './ui/Toolbar';
 import { turnEffect } from './ui/turnEffect';
 import { useGame } from './ui/useGame';
 import { useKeyboard } from './ui/useKeyboard';
 import { useSolver } from './ui/useSolver';
 
-type DialogName = 'settings' | 'stats' | null;
+type DialogName = 'settings' | 'stats' | 'game' | 'more' | null;
 
 export default function App() {
   const game = useGame();
@@ -149,6 +152,16 @@ export default function App() {
           }}
         />
       </main>
+      <ThumbBar
+        canUndo={playing && session.history.length > 0}
+        canRedo={playing && session.redo.length > 0}
+        busy={solver.busy}
+        onNew={() => setDialog('game')}
+        onUndo={game.undo}
+        onRedo={game.redo}
+        onHint={solver.requestHint}
+        onMore={() => setDialog('more')}
+      />
       <div className="sr-only" aria-live="polite" aria-atomic="true">
         {announcement.text}
         {announcement.n % 2 ? '' : '\u00a0'}
@@ -166,6 +179,25 @@ export default function App() {
         }}
       />
       <StatsDialog open={dialog === 'stats'} stats={stats} onImport={game.importStats} onClose={() => setDialog(null)} />
+      <GameSheet
+        open={dialog === 'game'}
+        drawCount={session.drawCount}
+        onNew={() => game.newGame()}
+        onRestart={game.restart}
+        onSwitchDraw={game.switchDraw}
+        onClose={() => setDialog(null)}
+      />
+      <MoreSheet
+        open={dialog === 'more'}
+        busy={solver.busy}
+        onStats={() => setDialog('stats')}
+        onSettings={() => setDialog('settings')}
+        onCheck={() => {
+          setDialog(null);
+          solver.checkWinnable();
+        }}
+        onClose={() => setDialog(null)}
+      />
       <NoMovesDialog
         kind={stuck}
         scoring={session.scoring}
