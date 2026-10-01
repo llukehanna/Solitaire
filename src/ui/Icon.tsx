@@ -6,6 +6,7 @@ const PATHS = {
   check: 'M20 6 9 17l-5-5',
   chart: 'M4 20V10 M10 20V4 M16 20v-7 M22 20H2',
   sliders: 'M4 21v-7 M4 10V3 M12 21v-9 M12 8V3 M20 21v-5 M20 12V3 M1 14h6 M9 8h6 M17 16h6',
+  more: 'M5 12h.01 M12 12h.01 M19 12h.01',
 } as const;
 
 export type IconName = keyof typeof PATHS;

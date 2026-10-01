@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { deal } from '../src/engine/deal';
 import { destinationsFor } from '../src/engine/movegen';
 import type { PileId } from '../src/engine/types';
-import { clickCenter, freshGame, pileCount, SEED } from './helpers';
+import { clickCenter, clickStock, freshGame, getSession, openSettings, pileCount, SEED } from './helpers';
 
 test.beforeEach(async ({}, info) => {
   test.skip(info.project.name !== 'mobile', 'phone layout only');
@@ -40,7 +40,7 @@ test('cards run edge to edge, fan tall, and carry a big index', async ({ page })
 
 test('dialogs open as bottom sheets and close with a downward swipe', async ({ page }) => {
   await freshGame(page, { seed: SEED });
-  await page.getByRole('button', { name: 'Settings' }).click();
+  await openSettings(page);
   const dialog = page.getByRole('dialog', { name: 'Settings' });
   await expect(dialog).toBeVisible();
   await page.waitForFunction(() => document.querySelector('dialog[open] .modal-card')?.getAnimations().every((a) => a.playState === 'finished'));
@@ -67,4 +67,51 @@ test('dialogs open as bottom sheets and close with a downward swipe', async ({ p
   await page.mouse.move(x, y + 200, { steps: 12 });
   await page.mouse.up();
   await expect(dialog).toBeHidden();
+});
+
+test('phones get a readout strip on top and a thumb bar below the cards', async ({ page }) => {
+  await freshGame(page, { seed: SEED });
+  const bar = page.getByRole('navigation', { name: 'Game controls' });
+  await expect(bar).toBeVisible();
+  for (const name of ['New', 'Undo', 'Hint', 'Redo', 'More']) {
+    const b = (await bar.getByRole('button', { name, exact: true }).boundingBox())!;
+    expect(b.width, name).toBeGreaterThanOrEqual(44);
+    expect(b.height, name).toBeGreaterThanOrEqual(44);
+  }
+  await expect(page.locator('.toolbar .tb-btn').first()).toBeHidden();
+  await expect(page.getByTestId('timer')).toBeVisible();
+  expect((await page.locator('.toolbar').boundingBox())!.height).toBeLessThanOrEqual(32);
+  const barTop = (await bar.boundingBox())!.y;
+  const bottoms = await page.locator('[data-card]').evaluateAll((els) => els.map((e) => e.getBoundingClientRect().bottom));
+  for (const b of bottoms) expect(b).toBeLessThanOrEqual(barTop);
+});
+
+test('the Game sheet restarts the deal and switches the draw', async ({ page }) => {
+  await freshGame(page, { seed: SEED });
+  await clickStock(page);
+  await expect.poll(() => pileCount(page, 'W')).toBe(1);
+  await page.getByRole('button', { name: 'New', exact: true }).click();
+  const sheet = page.getByRole('dialog', { name: 'Game' });
+  await sheet.getByRole('button', { name: 'Restart this deal' }).click();
+  await expect(sheet).toBeHidden();
+  await expect.poll(() => pileCount(page, 'W')).toBe(0);
+  expect((await getSession(page)).seed).toBe(SEED);
+  await page.getByRole('button', { name: 'New', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Game' }).getByRole('radio', { name: 'Draw 3' }).click();
+  await expect.poll(async () => (await getSession(page)).drawCount).toBe(3);
+  await expect(page.locator('.readout .pill')).toHaveText('Draw 3');
+});
+
+test('Hint works from the thumb bar', async ({ page }) => {
+  await freshGame(page, { seed: SEED });
+  await page.getByRole('button', { name: 'Hint', exact: true }).click();
+  await expect.poll(() => page.locator('.card.hinted, .hint-target').count()).toBeGreaterThan(0);
+});
+
+test('More opens Stats', async ({ page }) => {
+  await freshGame(page, { seed: SEED });
+  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('dialog', { name: 'More' }).getByRole('button', { name: 'Stats', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Statistics' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'More' })).toBeHidden();
 });
