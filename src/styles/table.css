@@ -140,6 +140,22 @@
 .face-rank { font-size: calc(var(--card-w) * 0.26); letter-spacing: -0.05em; white-space: nowrap; }
 .face-suit { width: calc(var(--card-w) * 0.163); height: calc(var(--card-w) * 0.163); fill: currentColor; }
 .face-pip { position: absolute; right: calc(var(--card-w) * 0.087); bottom: calc(var(--card-w) * 0.087); width: calc(var(--card-w) * 0.48); height: calc(var(--card-w) * 0.48); fill: currentColor; }
+/* Phones: on a ~50px card the fanned strip is all you read, so rank and suit sit side by side across it. */
+@media (max-width: 640px) and (orientation: portrait) {
+  .face-index {
+    top: calc(var(--card-w) * 0.04);
+    left: calc(var(--card-w) * 0.06);
+    right: calc(var(--card-w) * 0.06);
+    width: auto;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0;
+  }
+  .face-rank { font-size: calc(var(--card-w) * 0.42); letter-spacing: -0.06em; }
+  .face-suit { width: calc(var(--card-w) * 0.32); height: calc(var(--card-w) * 0.32); margin-top: calc(var(--card-w) * 0.03); }
+  .face-pip { right: auto; left: 50%; transform: translateX(-50%); bottom: calc(var(--card-w) * 0.1); width: calc(var(--card-w) * 0.5); height: calc(var(--card-w) * 0.5); }
+}
 /* Keyline and paper grain on the face. */
 .face::before { content: ''; position: absolute; inset: calc(var(--card-w) * 0.033); border-radius: calc(var(--card-w) * 0.043); border: 1px solid #0000000d; pointer-events: none; }
 .face::after {
