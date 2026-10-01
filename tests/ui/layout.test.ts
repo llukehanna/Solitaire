@@ -74,8 +74,9 @@ describe('computeLayout on phones', () => {
     expect(columnOffsets(L, s.tableau[0])).toEqual({ down: L.cardH * 0.1, up: L.cardH * 0.4 });
   });
   it('squeezes a 6-down, 13-up column to stay above the bottom', () => {
-    const L = computeLayout(375, 650, false, true);
+    const L = computeLayout(375, 480, false, true);
     const s = makeState({ cols: [['2C 3C 4C 5C 6C 7C KS QH JS TH 9S 8H 7S 6H 5S 4H 3S 2H AS', 6]] });
+    expect(columnOffsets(L, s.tableau[0]).up).toBeLessThan(L.cardH * 0.4);
     const pos = cardPositions(s, L);
     const top = s.tableau[0].cards[s.tableau[0].cards.length - 1];
     expect(pos.get(top)!.y + L.cardH).toBeLessThanOrEqual(L.tableauBottom + 0.5);
