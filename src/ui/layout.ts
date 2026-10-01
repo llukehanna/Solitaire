@@ -23,6 +23,9 @@ export interface Layout {
   tableau: Point[];
   tableauBottom: number;
   wasteFan: number;
+  /** Vertical step after a face-down / face-up tableau card, as a fraction of cardH (before any squeeze). */
+  downStep: number;
+  upStep: number;
 }
 export type PileKey = PileId | 'S';
 export interface CardPos {
@@ -36,14 +39,16 @@ export interface CardPos {
 
 const RATIO = 1.4;
 const GAP_RATIO = 0.14;
+/** Phones: seven columns cap the card width, so spend almost nothing on margins and gaps. */
+const PHONE_EDGE = 3;
 
-export function computeLayout(width: number, height: number, leftHanded: boolean): Layout {
-  const margin = Math.max(6, Math.min(24, width * 0.02));
-  const byWidth = (width - 2 * margin) / (7 + 6 * GAP_RATIO);
+export function computeLayout(width: number, height: number, leftHanded: boolean, phone = false): Layout {
+  const margin = phone ? PHONE_EDGE : Math.max(6, Math.min(24, width * 0.02));
+  const byWidth = phone ? (width - 2 * margin - 6 * PHONE_EDGE) / 7 : (width - 2 * margin) / (7 + 6 * GAP_RATIO);
   const byHeight = (height - 2 * margin) / (RATIO * 3.3);
   const cardW = Math.floor(Math.max(30, Math.min(byWidth, byHeight, 150)));
   const cardH = Math.round(cardW * RATIO);
-  const gap = Math.round(cardW * GAP_RATIO);
+  const gap = phone ? PHONE_EDGE : Math.round(cardW * GAP_RATIO);
   const left = Math.round((width - (7 * cardW + 6 * gap)) / 2);
   const colX = (i: number) => left + i * (cardW + gap);
   const top = Math.round(margin);
@@ -62,14 +67,17 @@ export function computeLayout(width: number, height: number, leftHanded: boolean
     foundations: [0, 1, 2, 3].map((i) => ({ x: colX(firstFoundation + i), y: top })),
     tableau: [0, 1, 2, 3, 4, 5, 6].map((i) => ({ x: colX(i), y: tableauY })),
     tableauBottom: height - margin,
-    wasteFan: Math.round(cardW * 0.22),
+    // Phones read rank and suit side by side, so the fan must show the whole index.
+    wasteFan: Math.round(cardW * (phone ? 0.45 : 0.22)),
+    downStep: phone ? 0.1 : 0.12,
+    upStep: phone ? 0.4 : 0.26,
   };
 }
 
 /** Vertical step after a face-down / face-up card in this column, shrunk if the column would overflow. */
 export function columnOffsets(L: Layout, col: Column): { down: number; up: number } {
-  const down = L.cardH * 0.12;
-  const up = L.cardH * 0.26;
+  const down = L.cardH * L.downStep;
+  const up = L.cardH * L.upStep;
   const faceDown = col.faceUpFrom;
   const faceUpSteps = Math.max(0, col.cards.length - col.faceUpFrom - 1);
   const need = faceDown * down + faceUpSteps * up;

@@ -8,6 +8,7 @@ import { Card } from './Card';
 import { pileCards } from './focus';
 import { SUIT_PATHS } from './cards/suits';
 import { boostedIds, cardPositions, computeLayout, pickupAt, pickupIds, pileRect, slotRect, type CardPos, type Layout, type PileKey } from './layout';
+import { usePhone } from './media';
 import type { Focus, Hint, Selection } from './types';
 import { useSize } from './useSize';
 import { useTableInput } from './useTableInput';
@@ -94,9 +95,10 @@ export function focusedElementId(state: GameState, focus: Focus | null): string 
 export function Table(p: TableProps) {
   const ref = useRef<HTMLDivElement>(null);
   const size = useSize(ref);
+  const phone = usePhone();
   const layout: Layout | null = useMemo(
-    () => (size && size.width > 0 && size.height > 0 ? computeLayout(size.width, size.height, p.settings.leftHanded) : null),
-    [size, p.settings.leftHanded],
+    () => (size && size.width > 0 && size.height > 0 ? computeLayout(size.width, size.height, p.settings.leftHanded, phone) : null),
+    [size, p.settings.leftHanded, phone],
   );
   const positions = useMemo(() => (layout ? cardPositions(p.state, layout) : null), [p.state, layout]);
   const cardEls = useRef(new Map<CardId, HTMLDivElement>());
