@@ -3,6 +3,7 @@ export const KEYS = {
   settings: 'sol.v1.settings',
   stats: 'sol.v1.stats',
   recent: 'sol.v1.recent',
+  installHint: 'sol.v1.installHint',
 } as const;
 
 export function readJSON(key: string): unknown {

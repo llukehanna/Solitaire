@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { devices, expect, test } from '@playwright/test';
 import { deal } from '../src/engine/deal';
 import { destinationsFor } from '../src/engine/movegen';
 import type { PileId } from '../src/engine/types';
@@ -114,4 +114,40 @@ test('More opens Stats', async ({ page }) => {
   await page.getByRole('dialog', { name: 'More' }).getByRole('button', { name: 'Stats', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Statistics' })).toBeVisible();
   await expect(page.getByRole('dialog', { name: 'More' })).toBeHidden();
+});
+
+const PLAYED_ONE = {
+  v: 1,
+  draw1: { played: 1, won: 0, currentStreak: 0, bestStreak: 0, bestTimeMs: null, fewestMoves: null, bestScore: null },
+  draw3: { played: 0, won: 0, currentStreak: 0, bestStreak: 0, bestTimeMs: null, fewestMoves: null, bestScore: null },
+  vegasBank: 0,
+};
+
+test('iPhones get install steps after their first game, and dismissing sticks', async ({ browser }) => {
+  const ctx = await browser.newContext({ ...devices['iPhone 13'], baseURL: 'http://localhost:4173' });
+  const page = await ctx.newPage();
+  await freshGame(page, { seed: SEED, storage: { 'sol.v1.stats': PLAYED_ONE } });
+  const hint = page.getByRole('complementary', { name: 'Install Solitaire' });
+  await expect(hint).toContainText('Add to Home Screen');
+  await hint.getByRole('button', { name: 'Dismiss' }).click();
+  await expect(hint).toBeHidden();
+  await page.reload();
+  await page.waitForFunction(() => !!window.__sol);
+  await expect(hint).toBeHidden();
+  await ctx.close();
+});
+
+test('no install hint before the first finished game', async ({ browser }) => {
+  const ctx = await browser.newContext({ ...devices['iPhone 13'], baseURL: 'http://localhost:4173' });
+  const page = await ctx.newPage();
+  await freshGame(page, { seed: SEED });
+  await page.waitForTimeout(300);
+  await expect(page.getByRole('complementary', { name: 'Install Solitaire' })).toHaveCount(0);
+  await ctx.close();
+});
+
+test('the installed app is locked to portrait', async ({ page }) => {
+  await freshGame(page);
+  const manifest = await page.evaluate(async () => (await fetch(document.querySelector<HTMLLinkElement>('link[rel="manifest"]')!.href)).json());
+  expect(manifest.orientation).toBe('portrait');
 });

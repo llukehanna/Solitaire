@@ -285,3 +285,26 @@
   .thumb-btn:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
   .toast { bottom: calc(84px + env(safe-area-inset-bottom)); }
 }
+
+.install-hint {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  z-index: 5500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 8px 10px 14px;
+  border-radius: 14px;
+  background: var(--panel-bg);
+  color: var(--ink);
+  border: 1px solid var(--panel-line);
+  box-shadow: 0 12px 32px #00000040;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  font-size: 13.5px;
+}
+.install-hint p { margin: 0; flex: 1; }
+.install-go { min-height: 36px; padding: 6px 14px; border-radius: 9px; border: 0; background: var(--accent); color: var(--accent-ink); font: inherit; font-weight: 500; cursor: pointer; }
+.install-close { width: 36px; height: 36px; border: 0; border-radius: 50%; background: transparent; color: var(--mute); font-size: 20px; line-height: 1; cursor: pointer; }
