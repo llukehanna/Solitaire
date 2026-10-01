@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { KEYS, readJSON, writeJSON } from '../store/storage';
 import { installHintMode, isIOS } from './installHint';
-import { usePhone } from './media';
+import { PHONE_QUERY, usePhone } from './media';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -10,7 +10,7 @@ interface BeforeInstallPromptEvent extends Event {
 const standalone = () =>
   window.matchMedia?.('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
 
-export function InstallHint({ gamesPlayed }: { gamesPlayed: number }) {
+export function InstallHint({ gamesPlayed, playing }: { gamesPlayed: number; playing: boolean }) {
   const phone = usePhone();
   const [dismissed, setDismissed] = useState(() => readJSON(KEYS.installHint) === true);
   const [promptEvent, setPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
@@ -20,6 +20,7 @@ export function InstallHint({ gamesPlayed }: { gamesPlayed: number }) {
   };
   useEffect(() => {
     const onPrompt = (e: Event) => {
+      if (!window.matchMedia?.(PHONE_QUERY).matches) return; // tablets and landscape keep Chrome's own infobar
       e.preventDefault(); // keep Chrome's own mini-infobar from competing with ours
       setPromptEvent(e as BeforeInstallPromptEvent);
     };
@@ -43,7 +44,7 @@ export function InstallHint({ gamesPlayed }: { gamesPlayed: number }) {
     ios: isIOS(navigator.userAgent, navigator.maxTouchPoints),
     canPrompt: promptEvent !== null,
   });
-  if (!mode) return null;
+  if (!mode || !playing) return null;
   return (
     <aside className="install-hint" aria-label="Install Solitaire">
       {mode === 'ios' ? (
@@ -55,8 +56,13 @@ export function InstallHint({ gamesPlayed }: { gamesPlayed: number }) {
             type="button"
             className="install-go"
             onClick={async () => {
-              await promptEvent?.prompt();
-              dismiss();
+              try {
+                await promptEvent?.prompt();
+              } catch {
+                /* already used or blocked */
+              } finally {
+                dismiss();
+              }
             }}
           >
             Install

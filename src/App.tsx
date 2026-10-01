@@ -166,7 +166,7 @@ export default function App() {
         onHint={solver.requestHint}
         onMore={() => setDialog('more')}
       />
-      <InstallHint gamesPlayed={stats.draw1.played + stats.draw3.played} />
+      <InstallHint gamesPlayed={stats.draw1.played + stats.draw3.played} playing={playing} />
       <div className="sr-only" aria-live="polite" aria-atomic="true">
         {announcement.text}
         {announcement.n % 2 ? '' : '\u00a0'}
