@@ -37,3 +37,34 @@ test('cards run edge to edge, fan tall, and carry a big index', async ({ page })
   expect(index.sameRow).toBe(true);
   expect(index.suitLeft).toBeGreaterThan(index.rankRight);
 });
+
+test('dialogs open as bottom sheets and close with a downward swipe', async ({ page }) => {
+  await freshGame(page, { seed: SEED });
+  await page.getByRole('button', { name: 'Settings' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Settings' });
+  await expect(dialog).toBeVisible();
+  await page.waitForFunction(() => document.querySelector('dialog[open] .modal-card')?.getAnimations().every((a) => a.playState === 'finished'));
+  const vh = page.viewportSize()!.height;
+  const card = (await page.locator('dialog[open] .modal-card').boundingBox())!;
+  expect(Math.abs(card.y + card.height - vh)).toBeLessThanOrEqual(1);
+  expect(card.width).toBeGreaterThanOrEqual(page.viewportSize()!.width - 1);
+
+  // A short, slow drag springs back.
+  const handle = (await page.locator('dialog[open] .sheet-handle').boundingBox())!;
+  const x = handle.x + handle.width / 2;
+  const y = handle.y + handle.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x, y + 30, { steps: 10 });
+  await page.waitForTimeout(150);
+  await page.mouse.move(x, y + 31);
+  await page.mouse.up();
+  await expect(dialog).toBeVisible();
+
+  // A long drag closes it.
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x, y + 200, { steps: 12 });
+  await page.mouse.up();
+  await expect(dialog).toBeHidden();
+});
