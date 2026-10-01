@@ -4,6 +4,8 @@ import { PHONE_QUERY } from '../media';
 export const DISMISS_PX = 80;
 /** px per ms, measured over the last pointer move. */
 export const DISMISS_VELOCITY = 0.5;
+/** A pointer that has been still this long before release has no flick velocity. */
+export const VELOCITY_IDLE_MS = 60;
 
 export function shouldDismiss(dy: number, velocity: number): boolean {
   if (dy <= 0) return false;
@@ -38,7 +40,8 @@ export function useSheetDrag(card: RefObject<HTMLElement | null>, open: boolean,
     const d = drag.current;
     if (!d || e.pointerId !== d.id) return;
     drag.current = null;
-    if (!cancelled && shouldDismiss(d.y - d.y0, d.v)) onClose(); // closing resets the transform via the effect above
+    const v = e.timeStamp - d.t > VELOCITY_IDLE_MS ? 0 : d.v;
+    if (!cancelled && shouldDismiss(d.y - d.y0, v)) onClose(); // closing resets the transform via the effect above
     else settle(true);
   };
 

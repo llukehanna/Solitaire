@@ -222,11 +222,13 @@
     max-height: 88dvh;
     border-radius: 16px 16px 0 0;
     border-bottom: 0;
-    padding: 10px 18px calc(18px + env(safe-area-inset-bottom));
+    padding: 0 18px calc(18px + env(safe-area-inset-bottom));
+    /* Opaque underlay so the thumb bar's labels can't ghost through the translucent panel. */
+    background: linear-gradient(var(--panel-bg), var(--panel-bg)), var(--bg);
   }
   .modal-body { overflow-y: auto; min-height: 0; overscroll-behavior: contain; }
   .modal[open] .modal-card { animation: sheet-up 240ms var(--ease); }
-  .sheet-grab { touch-action: none; cursor: grab; flex: none; }
+  .sheet-grab { touch-action: none; cursor: grab; flex: none; padding-top: 10px; }
   .sheet-handle { display: block; width: 36px; height: 4px; border-radius: 2px; margin: 0 auto 12px; background: color-mix(in srgb, var(--ink) 28%, transparent); }
 }
 @media (max-width: 640px) and (orientation: portrait) and (prefers-reduced-motion: reduce) {
@@ -307,4 +309,4 @@
 }
 .install-hint p { margin: 0; flex: 1; }
 .install-go { min-height: 36px; padding: 6px 14px; border-radius: 9px; border: 0; background: var(--accent); color: var(--accent-ink); font: inherit; font-weight: 500; cursor: pointer; }
-.install-close { width: 36px; height: 36px; border: 0; border-radius: 50%; background: transparent; color: var(--mute); font-size: 20px; line-height: 1; cursor: pointer; }
+.install-close { width: 44px; height: 44px; border: 0; border-radius: 50%; background: transparent; color: var(--mute); font-size: 20px; line-height: 1; cursor: pointer; }
