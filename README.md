@@ -21,7 +21,7 @@ Installable PWA, fully playable offline, built for both desktop and one-handed p
 - **Vite** + **React 19** + **TypeScript**, no backend
 - **vite-plugin-pwa** (Workbox) for offline and install
 - **Vitest** unit tests, **Playwright** e2e and visual tests
-- Deployed on **Vercel** as static output
+- Served as **Cloudflare Workers static assets** (`npm run deploy`); headers live in `public/_headers`
 
 ## Layout
 
